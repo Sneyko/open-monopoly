@@ -403,6 +403,10 @@ const Board: React.FC<BoardProps> = ({ players, properties, onCellClick, selecte
           const property = propertyMap.get(cell.index);
           const isCorner = [0, 10, 20, 30].includes(cell.index);
           const hasHouses = !isCorner && ((property?.houses ?? 0) > 0 || (property?.hotel ?? false));
+          const isOwned = !isCorner && !!property?.ownerId && !hasHouses;
+          const ownerColor = isOwned
+            ? PLAYER_COLORS[(players.find(p => p.id === property!.ownerId)?.color ?? 'red')]
+            : null;
           const isSelected = selectedCell === cell.index;
           const isHovered  = hoveredCell  === cell.index;
 
@@ -438,6 +442,30 @@ const Board: React.FC<BoardProps> = ({ players, properties, onCellClick, selecte
                   isBottom={isBottom} isTop={isTop} isLeft={isLeft} isRight={isRight}
                 />
               )}
+
+              {/* Indicateur propriétaire (sans maison) : bande colorée opaque + pastille */}
+              {isOwned && ownerColor && (() => {
+                // Coordonnées de la bande colorée selon la rangée
+                const bandX = isLeft ? x + w - BAND_H : isRight ? x : x;
+                const bandY = isBottom ? y : isTop ? y + h - BAND_H : y;
+                const bandW = (isLeft || isRight) ? BAND_H : w;
+                const bandH2 = (isLeft || isRight) ? h : BAND_H;
+                const cx2 = bandX + bandW / 2;
+                const cy2 = bandY + bandH2 / 2;
+                const r = Math.min(bandW, bandH2) * 0.28;
+                return (
+                  <g>
+                    {/* Fond semi-transparent couleur joueur sur la bande */}
+                    <rect x={bandX} y={bandY} width={bandW} height={bandH2}
+                      fill={ownerColor} opacity={0.28} rx={2}/>
+                    {/* Pastille centrale */}
+                    <circle cx={cx2} cy={cy2} r={r + 2} fill="rgba(0,0,0,0.55)"/>
+                    <circle cx={cx2} cy={cy2} r={r} fill={ownerColor}/>
+                    {/* Mini croix/maison blanche pour signifier "acheté" */}
+                    <circle cx={cx2} cy={cy2} r={r * 0.42} fill="white" opacity={0.9}/>
+                  </g>
+                );
+              })()}
             </g>
           );
         })}
