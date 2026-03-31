@@ -233,7 +233,7 @@ function movePlayer(
   }
   if (passedGo) {
     s = transferMoney(s, 'bank', playerId, SALARY)
-    s = log(s, `${s.players.find(p => p.id === playerId)?.name} passe par la case Départ et reçoit ${SALARY} F.`, playerId)
+    s = log(s, `${s.players.find(p => p.id === playerId)?.name} passe par la case Départ et reçoit ${SALARY} €.`, playerId)
   }
   return s
 }
@@ -509,7 +509,7 @@ export function rollDice(
             p.id === playerId ? { ...p, inJail: false, jailTurns: 0 } : p
           ),
         }
-        s = log(s, `${player.name} paye ${JAIL_FINE} F d'amende et sort de prison.`, playerId)
+        s = log(s, `${player.name} paye ${JAIL_FINE} € d'amende et sort de prison.`, playerId)
       } else {
         s = {
           ...s,
@@ -559,7 +559,7 @@ function applyCellEffect(state: GameState, playerId: string, position: number, d
     case 'tax': {
       const amount = cell.tax ?? 0
       s = transferMoney(s, playerId, 'free-parking', amount)
-      s = log(s, `${player.name} paye ${amount} F d'impôts.`, playerId)
+      s = log(s, `${player.name} paye ${amount} € d'impôts.`, playerId)
       s = nextPlayer(s)
       break
     }
@@ -580,7 +580,7 @@ function applyCellEffect(state: GameState, playerId: string, position: number, d
       if (pot > 0) {
         s = { ...s, freeParkingPot: 0 }
         s = transferMoney(s, 'bank', playerId, pot)
-        s = log(s, `${player.name} ramasse ${pot} F du Parc Gratuit !`, playerId)
+        s = log(s, `${player.name} ramasse ${pot} € du Parc Gratuit !`, playerId)
       } else {
         s = log(s, `${player.name} se repose au Parc Gratuit.`, playerId)
       }
@@ -614,7 +614,7 @@ function applyCellEffect(state: GameState, playerId: string, position: number, d
 
       if (!prop.ownerId) {
         // Proposer l'achat — l'état reste en attente de buy_property ou decline_property
-        s = log(s, `${player.name} s'arrête sur ${cell.name} (${cell.price} F). Achat possible.`, playerId)
+        s = log(s, `${player.name} s'arrête sur ${cell.name} (${cell.price} €). Achat possible.`, playerId)
         // Ne pas appeler nextPlayer — le joueur doit décider
         break
       }
@@ -634,7 +634,7 @@ function applyCellEffect(state: GameState, playerId: string, position: number, d
       const rent = calculateRent(s, playerId, position, diceTotal)
       s = transferMoney(s, playerId, prop.ownerId, rent)
       const owner = s.players.find(p => p.id === prop.ownerId)!
-      s = log(s, `${player.name} paye ${rent} F de loyer à ${owner.name} pour ${cell.name}.`, playerId)
+      s = log(s, `${player.name} paye ${rent} € de loyer à ${owner.name} pour ${cell.name}.`, playerId)
       s = checkBankruptcy(s, playerId)
       if (!s.players.find(p => p.id === playerId)?.isBankrupt) s = nextPlayer(s)
       break
@@ -673,7 +673,7 @@ export function buyProperty(
       p.id === player.position ? { ...p, ownerId: playerId } : p
     ),
   }
-  s = log(s, `${player.name} achète ${cell.name} pour ${price} F.`, playerId)
+  s = log(s, `${player.name} achète ${cell.name} pour ${price} €.`, playerId)
   s = nextPlayer(s)
 
   return { success: true, state: s }
@@ -727,7 +727,7 @@ export function auctionBid(
       currentBidderId: playerId,
     },
   }
-  s = log(s, `${player.name} enchérit ${amount} F.`, playerId)
+  s = log(s, `${player.name} enchérit ${amount} €.`, playerId)
   return { success: true, state: s }
 }
 
@@ -757,7 +757,7 @@ export function auctionPass(
         auctionState: undefined,
       }
       const winnerPlayer = s.players.find(p => p.id === winner)!
-      s = log(s, `${winnerPlayer.name} remporte l'enchère pour ${cell.name} à ${bid} F.`, winner)
+      s = log(s, `${winnerPlayer.name} remporte l'enchère pour ${cell.name} à ${bid} €.`, winner)
     } else {
       // Personne n'a enchéri
       s = { ...s, auctionState: undefined }
@@ -797,7 +797,7 @@ export function mortgageProperty(
     ),
   }
   const player = s.players.find(p => p.id === playerId)!
-  s = log(s, `${player.name} hypothèque ${cell.name} pour ${mortgageValue} F.`, playerId)
+  s = log(s, `${player.name} hypothèque ${cell.name} pour ${mortgageValue} €.`, playerId)
 
   return { success: true, state: s }
 }
@@ -815,7 +815,7 @@ export function unmortgageProperty(
   const liftCost = Math.floor((cell.mortgage ?? 0) * (1 + MORTGAGE_INTEREST))
   const player = state.players.find(p => p.id === playerId)!
 
-  if (player.money < liftCost) return { success: false, error: `Fonds insuffisants (${liftCost} F requis).`, state }
+  if (player.money < liftCost) return { success: false, error: `Fonds insuffisants (${liftCost} € requis).`, state }
 
   let s = transferMoney(state, playerId, 'bank', liftCost)
   s = {
@@ -824,7 +824,7 @@ export function unmortgageProperty(
       p.id === propertyId ? { ...p, mortgaged: false } : p
     ),
   }
-  s = log(s, `${player.name} lève l'hypothèque sur ${cell.name} pour ${liftCost} F.`, playerId)
+  s = log(s, `${player.name} lève l'hypothèque sur ${cell.name} pour ${liftCost} €.`, playerId)
 
   return { success: true, state: s }
 }
@@ -918,7 +918,7 @@ export function sellHouse(
         p.id === propertyId ? { ...p, hotel: false, houses: 4 } : p
       ),
     }
-    s = log(s, `${player.name} vend l'hôtel de ${cell.name} pour ${salePrice} F.`, playerId)
+    s = log(s, `${player.name} vend l'hôtel de ${cell.name} pour ${salePrice} €.`, playerId)
     return { success: true, state: s }
   }
 
@@ -930,7 +930,7 @@ export function sellHouse(
       p.id === propertyId ? { ...p, houses: p.houses - 1 } : p
     ),
   }
-  s = log(s, `${player.name} vend une maison sur ${cell.name} pour ${salePrice} F.`, playerId)
+  s = log(s, `${player.name} vend une maison sur ${cell.name} pour ${salePrice} €.`, playerId)
   return { success: true, state: s }
 }
 
@@ -1036,7 +1036,7 @@ export function payJailFine(
       p.id === playerId ? { ...p, inJail: false, jailTurns: 0 } : p
     ),
   }
-  s = log(s, `${player.name} paye ${JAIL_FINE} F et sort de prison.`, playerId)
+  s = log(s, `${player.name} paye ${JAIL_FINE} € et sort de prison.`, playerId)
 
   return { success: true, state: s }
 }

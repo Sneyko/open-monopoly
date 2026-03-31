@@ -1,6 +1,11 @@
 import React from 'react'
 import type { Property, Player } from '../../../shared/types'
 
+const PLAYER_COLOR_HEX: Record<string, string> = {
+  red: '#ef4444', blue: '#3b82f6', green: '#22c55e',
+  yellow: '#eab308', purple: '#a855f7', orange: '#f97316',
+}
+
 // ─── Données des cases (noms GAMES.md + loyers gameEngine) ───────────────────
 
 interface CellInfo {
@@ -179,7 +184,7 @@ export default function CellInfoPanel({ cellIndex, property, players, onClose }:
         {owner && (
           <div className="flex justify-between items-center">
             <span className="text-white/40 text-xs">Propriétaire</span>
-            <span className="font-semibold text-xs" style={{ color: `var(--color-${owner.color}, #aaa)` }}>
+            <span className="font-semibold text-xs" style={{ color: PLAYER_COLOR_HEX[owner.color] ?? '#aaa' }}>
               {owner.name}
             </span>
           </div>

@@ -207,6 +207,53 @@ function getCellRect(index: number): {
 
 const BAND_H = 43; // 18 × 2.3846 — épaisseur de la bande colorée dans le SVG plateau
 
+// Maison en forme de maison (carré + toit triangulaire)
+// cx/cy = centre de la maison, size = largeur, angle = rotation (0 = toit vers le haut)
+function HouseShape({ cx, cy, size, angle, color, shadow }: {
+  cx: number; cy: number; size: number; angle: number; color: string; shadow?: string;
+}) {
+  const bodyH = size * 0.55;
+  const roofH = size * 0.48;
+  // Corps : centré sous le toit
+  const bx = cx - size / 2;
+  const by = cy - bodyH / 2 + roofH * 0.3;
+  // Toit : triangle au-dessus du corps
+  const roofPoints = `${cx},${by - roofH} ${cx - size / 2 - 1},${by} ${cx + size / 2 + 1},${by}`;
+  return (
+    <g transform={`rotate(${angle}, ${cx}, ${cy})`}>
+      {shadow && <rect x={bx + 1} y={by + 1} width={size} height={bodyH} rx="1.5" fill={shadow} opacity="0.4"/>}
+      <rect x={bx} y={by} width={size} height={bodyH} rx="1.5" fill={color}/>
+      <rect x={bx + size * 0.35} y={by + bodyH * 0.45} width={size * 0.3} height={bodyH * 0.55} rx="1" fill="rgba(0,0,0,0.25)"/>
+      {shadow && <polygon points={`${cx},${by - roofH - 0.5} ${cx - size / 2 - 1},${by + 0.5} ${cx + size / 2 + 1},${by + 0.5}`} fill={shadow} opacity="0.4" transform={`translate(1,1)`}/>}
+      <polygon points={roofPoints} fill={color} style={{ filter: 'brightness(0.78)' }}/>
+    </g>
+  );
+}
+
+// Hôtel (bâtiment plus large avec toit plat et fenêtres)
+function HotelShape({ cx, cy, w, h, angle, color, shadow }: {
+  cx: number; cy: number; w: number; h: number; angle: number; color: string; shadow?: string;
+}) {
+  const bx = cx - w / 2;
+  const by = cy - h / 2;
+  const roofH = h * 0.22;
+  return (
+    <g transform={`rotate(${angle}, ${cx}, ${cy})`}>
+      {shadow && <rect x={bx + 1.5} y={by + 1.5} width={w} height={h} rx="2.5" fill={shadow} opacity="0.4"/>}
+      {/* Corps */}
+      <rect x={bx} y={by + roofH} width={w} height={h - roofH} rx="2" fill={color}/>
+      {/* Toit */}
+      <rect x={bx - 2} y={by} width={w + 4} height={roofH + 2} rx="2" fill={color} style={{ filter: 'brightness(0.72)' }}/>
+      {/* Fenêtres */}
+      {[0.18, 0.42, 0.66].map((fx, i) => (
+        <rect key={i} x={bx + w * fx} y={by + roofH + h * 0.28} width={w * 0.18} height={h * 0.28} rx="1" fill="rgba(255,255,255,0.22)"/>
+      ))}
+      {/* Porte */}
+      <rect x={bx + w * 0.38} y={by + roofH + h * 0.42} width={w * 0.24} height={h * 0.38} rx="1" fill="rgba(0,0,0,0.3)"/>
+    </g>
+  );
+}
+
 function HouseIndicator({
   x, y, w, h, houses, hotel, isBottom, isTop, isLeft, isRight,
 }: {
@@ -214,60 +261,58 @@ function HouseIndicator({
   houses: number; hotel: boolean;
   isBottom: boolean; isTop: boolean; isLeft: boolean; isRight: boolean;
 }) {
-  const green = "#43A047";
-  const red = "#E24B4A";
+  const green  = "#3ec853";
+  const red    = "#e63c3c";
+  const shadow = "#000000";
+
+  // Orientation : angle de rotation pour que le toit pointe vers l'intérieur du plateau
+  // isBottom → toit vers le haut (0°), isTop → toit vers le bas (180°), isLeft → toit vers la droite (90°), isRight → toit vers la gauche (270°)
+  const angle = isBottom ? 0 : isTop ? 180 : isLeft ? 90 : 270;
+
+  // Bande où on doit dessiner (zone colorée)
+  const bandY = isBottom ? y            : isTop ? y + h - BAND_H : y;
+  const bandX = isLeft   ? x + w - BAND_H : isRight ? x          : x;
+  const bandW = (isLeft || isRight) ? BAND_H : w;
+  const bandH = (isLeft || isRight) ? h       : BAND_H;
 
   if (hotel) {
-    if (isBottom) return <rect x={x + w * 0.2} y={y + 5} width={w * 0.6} height={BAND_H - 10} rx="4" fill={red}/>;
-    if (isTop)   return <rect x={x + w * 0.2} y={y + h - BAND_H + 5} width={w * 0.6} height={BAND_H - 10} rx="4" fill={red}/>;
-    if (isLeft)  return <rect x={x + w - BAND_H + 5} y={y + h * 0.2} width={BAND_H - 10} height={h * 0.6} rx="4" fill={red}/>;
-    if (isRight) return <rect x={x + 5} y={y + h * 0.2} width={BAND_H - 10} height={h * 0.6} rx="4" fill={red}/>;
-    return null;
+    const cx = bandX + bandW / 2;
+    const cy = bandY + bandH / 2;
+    const hw = (isLeft || isRight) ? BAND_H * 0.72 : Math.min(bandW * 0.7, 52);
+    const hh = (isLeft || isRight) ? Math.min(bandH * 0.72, 52) : BAND_H * 0.78;
+    return <HotelShape cx={cx} cy={cy} w={hw} h={hh} angle={angle} color={red} shadow={shadow}/>;
   }
 
-  const houseSize = 19; // 8 × 2.3846
-  const gap = 5;        // 2 × 2.3846
-  const total = houses * (houseSize + gap) - gap;
-  const startX = x + w / 2 - total / 2;
+  const houseSize = Math.min(
+    (isLeft || isRight) ? (bandH - 8) / houses - 4 : (bandW - 8) / houses - 3,
+    28,
+  );
+  const gap = 3;
+  const count = houses;
 
-  if (isBottom) {
+  if (isBottom || isTop) {
+    const total = count * (houseSize + gap) - gap;
+    const startX = bandX + bandW / 2 - total / 2 + houseSize / 2;
+    const cy = bandY + bandH / 2;
     return (
       <g>
-        {Array.from({ length: houses }).map((_, i) => (
-          <rect key={i} x={startX + i * (houseSize + gap)} y={y + 5} width={houseSize} height={BAND_H - 10} rx="2" fill={green}/>
+        {Array.from({ length: count }).map((_, i) => (
+          <HouseShape key={i} cx={startX + i * (houseSize + gap)} cy={cy} size={houseSize} angle={angle} color={green} shadow={shadow}/>
         ))}
       </g>
     );
   }
-  if (isTop) {
-    return (
-      <g>
-        {Array.from({ length: houses }).map((_, i) => (
-          <rect key={i} x={startX + i * (houseSize + gap)} y={y + h - BAND_H + 5} width={houseSize} height={BAND_H - 10} rx="2" fill={green}/>
-        ))}
-      </g>
-    );
-  }
-  const startY = y + h / 2 - total / 2;
-  if (isLeft) {
-    return (
-      <g>
-        {Array.from({ length: houses }).map((_, i) => (
-          <rect key={i} x={x + w - BAND_H + 5} y={startY + i * (houseSize + gap)} width={BAND_H - 10} height={houseSize} rx="2" fill={green}/>
-        ))}
-      </g>
-    );
-  }
-  if (isRight) {
-    return (
-      <g>
-        {Array.from({ length: houses }).map((_, i) => (
-          <rect key={i} x={x + 5} y={startY + i * (houseSize + gap)} width={BAND_H - 10} height={houseSize} rx="2" fill={green}/>
-        ))}
-      </g>
-    );
-  }
-  return null;
+  // isLeft || isRight
+  const total = count * (houseSize + gap) - gap;
+  const startY = bandY + bandH / 2 - total / 2 + houseSize / 2;
+  const cx = bandX + bandW / 2;
+  return (
+    <g>
+      {Array.from({ length: count }).map((_, i) => (
+        <HouseShape key={i} cx={cx} cy={startY + i * (houseSize + gap)} size={houseSize} angle={angle} color={green} shadow={shadow}/>
+      ))}
+    </g>
+  );
 }
 
 // ─── Pions ────────────────────────────────────────────────────────────────────

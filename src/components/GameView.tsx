@@ -6,6 +6,7 @@ import GameLog from './UI/GameLog'
 import TradeModal from './UI/TradeModal'
 import CellInfoPanel from './UI/CellInfoPanel'
 import CardRevealModal from './UI/CardRevealModal'
+import EventBanner from './UI/EventBanner'
 import { useGame } from '../hooks/useGame'
 import { useSocket } from '../hooks/useSocket'
 import { useAnimatedPlayers } from '../hooks/useAnimatedPlayers'
@@ -28,7 +29,8 @@ export default function GameView() {
   const isHost = room?.hostId === myPlayerId
   const [showTrade, setShowTrade] = useState(false)
   const [selectedCell, setSelectedCell] = useState<number | null>(null)
-  const [shownCard, setShownCard] = useState<typeof gameState.lastCard>(undefined)
+  const [boardRotation, setBoardRotation] = useState(0)
+  const [shownCard, setShownCard] = useState<{ deck: 'chance'|'community'; text: string; image: string } | undefined>(undefined)
   const prevCardRef = useRef<string | undefined>(undefined)
 
   const animatedPlayers = useAnimatedPlayers(gameState?.players ?? [])
@@ -78,15 +80,41 @@ export default function GameView() {
       {/* ── Plateau (dominant) ── */}
       <div className="flex-1 flex items-center justify-center p-3 min-w-0">
         <div style={{ width: 'min(calc(100vh - 1.5rem), calc(100vw - 320px))', aspectRatio: '1', position: 'relative' }}>
-          <Board
-            players={animatedPlayers.map(p => ({
-              id: p.id, name: p.name, color: p.color, position: p.position,
-            }))}
-            properties={gameState.properties}
-            onCellClick={(i) => setSelectedCell(prev => prev === i ? null : i)}
-            selectedCell={selectedCell}
-            currentPlayerId={gameState.currentPlayerId}
-          />
+          {/* Bouton rotation */}
+          <button
+            onClick={() => setBoardRotation(r => (r + 90) % 360)}
+            title="Tourner le plateau"
+            style={{
+              position: 'absolute', top: 6, right: 6, zIndex: 50,
+              background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)',
+              borderRadius: '8px', padding: '6px 10px', color: 'white', cursor: 'pointer',
+              fontSize: '16px', lineHeight: 1, backdropFilter: 'blur(8px)',
+              transition: 'background 0.2s',
+            }}
+          >
+            ↻
+          </button>
+
+          {/* Plateau rotatif */}
+          <div style={{
+            width: '100%', height: '100%',
+            transform: `rotate(${boardRotation}deg)`,
+            transition: 'transform 0.4s cubic-bezier(0.4,0,0.2,1)',
+          }}>
+            <Board
+              players={animatedPlayers.map(p => ({
+                id: p.id, name: p.name, color: p.color, position: p.position,
+              }))}
+              properties={gameState.properties}
+              onCellClick={(i) => setSelectedCell(prev => prev === i ? null : i)}
+              selectedCell={selectedCell}
+              currentPlayerId={gameState.currentPlayerId}
+            />
+          </div>
+
+          {/* EventBanner — centré, hors rotation */}
+          <EventBanner events={gameState.log} />
+
           {selectedCell !== null && (
             <CellInfoPanel
               cellIndex={selectedCell}
