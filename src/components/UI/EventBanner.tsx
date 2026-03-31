@@ -115,12 +115,11 @@ export default function EventBanner({ events }: Props) {
         }}
       >
         <div style={{
-          background: current.bg,
-          border: `1.5px solid ${current.color}44`,
-          backdropFilter: 'blur(10px)',
+          background: `#13151cee`,
+          border: `2px solid ${current.color}99`,
           borderRadius: '20px',
           padding: '16px 24px',
-          boxShadow: `0 12px 48px rgba(0,0,0,0.6), 0 0 0 1px ${current.color}22`,
+          boxShadow: `0 16px 56px rgba(0,0,0,0.85), 0 0 0 1px ${current.color}33, inset 0 0 32px ${current.color}11`,
         }}>
           <div style={{ fontSize: '2.5rem', lineHeight: 1, marginBottom: '8px' }}>
             {current.icon}

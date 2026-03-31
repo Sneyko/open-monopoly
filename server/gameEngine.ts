@@ -25,46 +25,46 @@ interface CellDef {
 }
 
 const CELLS: CellDef[] = [
-  { index: 0,  name: 'Départ',              type: 'go' },
-  { index: 1,  name: 'Méditerranée',        type: 'property', colorGroup: 'brown',      price: 60,  rents: [2,10,30,90,160,250],    mortgage: 30,  houseCost: 50,  hotelCost: 50 },
-  { index: 2,  name: 'Caisse de Communauté',type: 'community' },
-  { index: 3,  name: 'Boulevard de Belleville', type: 'property', colorGroup: 'brown',  price: 60,  rents: [4,20,60,180,320,450],   mortgage: 30,  houseCost: 50,  hotelCost: 50 },
-  { index: 4,  name: 'Impôt sur le revenu', type: 'tax', tax: 200 },
-  { index: 5,  name: 'Gare Montparnasse',   type: 'railroad', price: 200, rents: [25,50,100,200], mortgage: 100 },
-  { index: 6,  name: 'Rue de Vaugirard',    type: 'property', colorGroup: 'light-blue', price: 100, rents: [6,30,90,270,400,550],   mortgage: 50,  houseCost: 50,  hotelCost: 50 },
-  { index: 7,  name: 'Chance',              type: 'chance' },
-  { index: 8,  name: 'Rue de Courcelles',   type: 'property', colorGroup: 'light-blue', price: 100, rents: [6,30,90,270,400,550],   mortgage: 50,  houseCost: 50,  hotelCost: 50 },
-  { index: 9,  name: 'Avenue de la République', type: 'property', colorGroup: 'light-blue', price: 120, rents: [8,40,100,300,450,600], mortgage: 60, houseCost: 50, hotelCost: 50 },
-  { index: 10, name: 'Prison / Simple visite', type: 'jail' },
-  { index: 11, name: 'Boulevard de la Villette', type: 'property', colorGroup: 'pink',  price: 140, rents: [10,50,150,450,625,750],  mortgage: 70,  houseCost: 100, hotelCost: 100 },
-  { index: 12, name: 'Compagnie de Distribution Électrique', type: 'utility', price: 150, mortgage: 75 },
-  { index: 13, name: 'Avenue de Neuilly',   type: 'property', colorGroup: 'pink',        price: 140, rents: [10,50,150,450,625,750],  mortgage: 70,  houseCost: 100, hotelCost: 100 },
-  { index: 14, name: 'Rue de Paradis',      type: 'property', colorGroup: 'pink',        price: 160, rents: [12,60,180,500,700,900],  mortgage: 80,  houseCost: 100, hotelCost: 100 },
-  { index: 15, name: 'Gare de Lyon',        type: 'railroad', price: 200, rents: [25,50,100,200], mortgage: 100 },
-  { index: 16, name: 'Avenue Mozart',       type: 'property', colorGroup: 'orange',      price: 180, rents: [14,70,200,550,750,950],  mortgage: 90,  houseCost: 100, hotelCost: 100 },
-  { index: 17, name: 'Caisse de Communauté',type: 'community' },
-  { index: 18, name: 'Boulevard Saint-Michel', type: 'property', colorGroup: 'orange',  price: 180, rents: [14,70,200,550,750,950],  mortgage: 90,  houseCost: 100, hotelCost: 100 },
-  { index: 19, name: 'Place Pigalle',       type: 'property', colorGroup: 'orange',      price: 200, rents: [16,80,220,600,800,1000], mortgage: 100, houseCost: 100, hotelCost: 100 },
-  { index: 20, name: 'Parc Gratuit',        type: 'free-parking' },
-  { index: 21, name: 'Avenue Matignon',     type: 'property', colorGroup: 'red',         price: 220, rents: [18,90,250,700,875,1050], mortgage: 110, houseCost: 150, hotelCost: 150 },
-  { index: 22, name: 'Chance',              type: 'chance' },
-  { index: 23, name: 'Boulevard Malesherbes', type: 'property', colorGroup: 'red',       price: 220, rents: [18,90,250,700,875,1050], mortgage: 110, houseCost: 150, hotelCost: 150 },
-  { index: 24, name: 'Avenue Henri-Martin', type: 'property', colorGroup: 'red',         price: 240, rents: [20,100,300,750,925,1100],mortgage: 120, houseCost: 150, hotelCost: 150 },
-  { index: 25, name: 'Gare du Nord',        type: 'railroad', price: 200, rents: [25,50,100,200], mortgage: 100 },
-  { index: 26, name: 'Faubourg Saint-Honoré', type: 'property', colorGroup: 'yellow',   price: 260, rents: [22,110,330,800,975,1150], mortgage: 130, houseCost: 150, hotelCost: 150 },
-  { index: 27, name: 'Place de la Bourse',  type: 'property', colorGroup: 'yellow',      price: 260, rents: [22,110,330,800,975,1150], mortgage: 130, houseCost: 150, hotelCost: 150 },
-  { index: 28, name: 'Compagnie des Eaux',  type: 'utility', price: 150, mortgage: 75 },
-  { index: 29, name: 'Rue La Fayette',      type: 'property', colorGroup: 'yellow',      price: 280, rents: [24,120,360,850,1025,1200],mortgage: 140, houseCost: 150, hotelCost: 150 },
-  { index: 30, name: 'Allez en Prison',     type: 'go-to-jail' },
-  { index: 31, name: 'Avenue de Breteuil',  type: 'property', colorGroup: 'green',       price: 300, rents: [26,130,390,900,1100,1275],mortgage: 150, houseCost: 200, hotelCost: 200 },
-  { index: 32, name: 'Avenue Foch',         type: 'property', colorGroup: 'green',       price: 300, rents: [26,130,390,900,1100,1275],mortgage: 150, houseCost: 200, hotelCost: 200 },
-  { index: 33, name: 'Caisse de Communauté',type: 'community' },
-  { index: 34, name: 'Boulevard des Capucines', type: 'property', colorGroup: 'green',  price: 320, rents: [28,150,450,1000,1200,1400],mortgage: 160, houseCost: 200, hotelCost: 200 },
-  { index: 35, name: 'Gare Saint-Lazare',   type: 'railroad', price: 200, rents: [25,50,100,200], mortgage: 100 },
-  { index: 36, name: 'Chance',              type: 'chance' },
-  { index: 37, name: 'Avenue des Champs-Élysées', type: 'property', colorGroup: 'dark-blue', price: 350, rents: [35,175,500,1100,1300,1500], mortgage: 175, houseCost: 200, hotelCost: 200 },
-  { index: 38, name: 'Taxe de Luxe',        type: 'tax', tax: 100 },
-  { index: 39, name: 'Rue de la Paix',      type: 'property', colorGroup: 'dark-blue',  price: 400, rents: [50,200,600,1400,1700,2000], mortgage: 200, houseCost: 200, hotelCost: 200 },
+  { index: 0,  name: 'Départ',                type: 'go' },
+  { index: 1,  name: 'Reynerie',              type: 'property', colorGroup: 'brown',      price: 60,  rents: [2,10,30,90,160,250],     mortgage: 30,  houseCost: 50,  hotelCost: 50 },
+  { index: 2,  name: 'Caisse IZLY',           type: 'community' },
+  { index: 3,  name: 'Bellefontaine',         type: 'property', colorGroup: 'brown',      price: 60,  rents: [4,20,60,180,320,450],    mortgage: 30,  houseCost: 50,  hotelCost: 50 },
+  { index: 4,  name: 'Gemini Mensuel',        type: 'tax', tax: 200 },
+  { index: 5,  name: 'Nine',                  type: 'railroad', price: 200, rents: [25,50,100,200], mortgage: 100 },
+  { index: 6,  name: 'Basso Cambo',           type: 'property', colorGroup: 'light-blue', price: 100, rents: [6,30,90,270,400,550],    mortgage: 50,  houseCost: 50,  hotelCost: 50 },
+  { index: 7,  name: 'Chance',                type: 'chance' },
+  { index: 8,  name: 'Mirail-Université',     type: 'property', colorGroup: 'light-blue', price: 100, rents: [6,30,90,270,400,550],    mortgage: 50,  houseCost: 50,  hotelCost: 50 },
+  { index: 9,  name: 'Bagatelle',             type: 'property', colorGroup: 'light-blue', price: 120, rents: [8,40,100,300,450,600],   mortgage: 60,  houseCost: 50,  hotelCost: 50 },
+  { index: 10, name: 'En TD / Simple Visite', type: 'jail' },
+  { index: 11, name: 'Trois Cocus',           type: 'property', colorGroup: 'pink',       price: 140, rents: [10,50,150,450,625,750],  mortgage: 70,  houseCost: 100, hotelCost: 100 },
+  { index: 12, name: 'Tisséo Pastel',         type: 'utility', price: 150, mortgage: 75 },
+  { index: 13, name: 'Faculté de Pharmacie',  type: 'property', colorGroup: 'pink',       price: 140, rents: [10,50,150,450,625,750],  mortgage: 70,  houseCost: 100, hotelCost: 100 },
+  { index: 14, name: 'Borderouge',            type: 'property', colorGroup: 'pink',       price: 160, rents: [12,60,180,500,700,900],  mortgage: 80,  houseCost: 100, hotelCost: 100 },
+  { index: 15, name: 'Café Pop',              type: 'railroad', price: 200, rents: [25,50,100,200], mortgage: 100 },
+  { index: 16, name: 'Roseraie',              type: 'property', colorGroup: 'orange',     price: 180, rents: [14,70,200,550,750,950],  mortgage: 90,  houseCost: 100, hotelCost: 100 },
+  { index: 17, name: 'Caisse IZLY',           type: 'community' },
+  { index: 18, name: 'Jolimont',              type: 'property', colorGroup: 'orange',     price: 180, rents: [14,70,200,550,750,950],  mortgage: 90,  houseCost: 100, hotelCost: 100 },
+  { index: 19, name: 'Marengo-SNCF',          type: 'property', colorGroup: 'orange',     price: 200, rents: [16,80,220,600,800,1000], mortgage: 100, houseCost: 100, hotelCost: 100 },
+  { index: 20, name: 'Jardin Japonais',       type: 'free-parking' },
+  { index: 21, name: "Patte d'Oie",           type: 'property', colorGroup: 'red',        price: 220, rents: [18,90,250,700,875,1050], mortgage: 110, houseCost: 150, hotelCost: 150 },
+  { index: 22, name: 'Chance',                type: 'chance' },
+  { index: 23, name: 'St-Cyprien',            type: 'property', colorGroup: 'red',        price: 220, rents: [18,90,250,700,875,1050], mortgage: 110, houseCost: 150, hotelCost: 150 },
+  { index: 24, name: 'Arènes',                type: 'property', colorGroup: 'red',        price: 240, rents: [20,100,300,750,925,1100], mortgage: 120, houseCost: 150, hotelCost: 150 },
+  { index: 25, name: "O'club",                type: 'railroad', price: 200, rents: [25,50,100,200], mortgage: 100 },
+  { index: 26, name: "Jeanne d'Arc",          type: 'property', colorGroup: 'yellow',     price: 260, rents: [22,110,330,800,975,1150], mortgage: 130, houseCost: 150, hotelCost: 150 },
+  { index: 27, name: 'Compans-Caffarelli',    type: 'property', colorGroup: 'yellow',     price: 260, rents: [22,110,330,800,975,1150], mortgage: 130, houseCost: 150, hotelCost: 150 },
+  { index: 28, name: 'Facture Libre',         type: 'utility', price: 150, mortgage: 75 },
+  { index: 29, name: 'Palais de Justice',     type: 'property', colorGroup: 'yellow',     price: 280, rents: [24,120,360,850,1025,1200], mortgage: 140, houseCost: 150, hotelCost: 150 },
+  { index: 30, name: 'Allez en TD',           type: 'go-to-jail' },
+  { index: 31, name: 'François-Verdier',      type: 'property', colorGroup: 'green',      price: 300, rents: [26,130,390,900,1100,1275], mortgage: 150, houseCost: 200, hotelCost: 200 },
+  { index: 32, name: 'Esquirol',              type: 'property', colorGroup: 'green',      price: 300, rents: [26,130,390,900,1100,1275], mortgage: 150, houseCost: 200, hotelCost: 200 },
+  { index: 33, name: 'Caisse IZLY',           type: 'community' },
+  { index: 34, name: 'Carmes',                type: 'property', colorGroup: 'green',      price: 320, rents: [28,150,450,1000,1200,1400], mortgage: 160, houseCost: 200, hotelCost: 200 },
+  { index: 35, name: 'Magma Club',            type: 'railroad', price: 200, rents: [25,50,100,200], mortgage: 100 },
+  { index: 36, name: 'Chance',                type: 'chance' },
+  { index: 37, name: 'Capitole',              type: 'property', colorGroup: 'dark-blue',  price: 350, rents: [35,175,500,1100,1300,1500], mortgage: 175, houseCost: 200, hotelCost: 200 },
+  { index: 38, name: 'Frais de scolarité',    type: 'tax', tax: 100 },
+  { index: 39, name: 'Jean-Jaurès',           type: 'property', colorGroup: 'dark-blue',  price: 400, rents: [50,200,600,1400,1700,2000], mortgage: 200, houseCost: 200, hotelCost: 200 },
 ]
 
 const SALARY = 20000        // 20 000 F en passant par GO
@@ -580,9 +580,9 @@ function applyCellEffect(state: GameState, playerId: string, position: number, d
       if (pot > 0) {
         s = { ...s, freeParkingPot: 0 }
         s = transferMoney(s, 'bank', playerId, pot)
-        s = log(s, `${player.name} ramasse ${pot} € du Parc Gratuit !`, playerId)
+        s = log(s, `${player.name} ramasse ${pot} € du Jardin Japonais !`, playerId)
       } else {
-        s = log(s, `${player.name} se repose au Parc Gratuit.`, playerId)
+        s = log(s, `${player.name} se repose au Jardin Japonais.`, playerId)
       }
       s = nextPlayer(s)
       break
