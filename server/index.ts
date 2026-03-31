@@ -6,6 +6,7 @@ import type { ServerToClientEvents, ClientToServerEvents, PlayerColor, TradeOffe
 import {
   createRoom, getRoom, joinRoom, setPlayerDisconnected, updateRoom, roomToInfo, kickPlayer,
 } from './rooms'
+
 import { EVENTS } from './events'
 import * as engine from './gameEngine'
 
@@ -187,6 +188,18 @@ io.on('connection', (socket) => {
   socket.on(EVENTS.AUCTION_PASS, () => {
     withGame(state => {
       applyResult(engine.auctionPass(state, currentPlayerId!))
+    })
+  })
+
+  socket.on(EVENTS.CHOOSE_PARKING_BOOST, ({ propertyId }: { propertyId: number }) => {
+    withGame(state => {
+      applyResult(engine.chooseParkingBoost(state, currentPlayerId!, propertyId))
+    })
+  })
+
+  socket.on(EVENTS.DECLINE_PARKING_BOOST, () => {
+    withGame(state => {
+      applyResult(engine.declineParkingBoost(state, currentPlayerId!))
     })
   })
 

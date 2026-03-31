@@ -69,6 +69,11 @@ export interface TradeOffer {
   }
 }
 
+export interface FreeParkingBoost {
+  playerId: string
+  propertyId: number
+}
+
 export interface GameState {
   phase: GamePhase
   turn: number
@@ -86,6 +91,8 @@ export interface GameState {
   pendingTrade?: TradeOffer
   freeParkingPot: number
   auctionState?: AuctionState
+  freeParkingBoost?: FreeParkingBoost   // propriété dont le loyer est ×3
+  awaitingParkingChoice?: boolean       // joueur actuel doit choisir s'il booste
 }
 
 export interface AuctionState {
@@ -137,5 +144,7 @@ export interface ClientToServerEvents {
   auction_bid: (data: { amount: number }) => void
   auction_pass: () => void
   kick_player: (data: { targetPlayerId: string }) => void
+  choose_parking_boost: (data: { propertyId: number }) => void
+  decline_parking_boost: () => void
 }
 

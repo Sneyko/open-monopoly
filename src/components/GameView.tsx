@@ -7,6 +7,7 @@ import TradeModal from './UI/TradeModal'
 import CellInfoPanel from './UI/CellInfoPanel'
 import CardRevealModal from './UI/CardRevealModal'
 import EventBanner from './UI/EventBanner'
+import FreeParkingModal from './UI/FreeParkingModal'
 import { useGame } from '../hooks/useGame'
 import { useSocket } from '../hooks/useSocket'
 import { useAnimatedPlayers } from '../hooks/useAnimatedPlayers'
@@ -23,6 +24,7 @@ export default function GameView() {
     gameState, myPlayerId, isMyTurn,
     rollDice, buyProperty, declineProperty, endTurn,
     payJailFine, useGetOutOfJailCard, declareBankruptcy,
+    chooseParkingBoost, declineParkingBoost,
   } = useGame()
   const socket = useSocket()
   const { room } = useRoomStore()
@@ -109,6 +111,7 @@ export default function GameView() {
               onCellClick={(i) => setSelectedCell(prev => prev === i ? null : i)}
               selectedCell={selectedCell}
               currentPlayerId={gameState.currentPlayerId}
+              boostedPropertyId={gameState.freeParkingBoost?.propertyId ?? null}
             />
           </div>
 
@@ -270,6 +273,16 @@ export default function GameView() {
           text={shownCard.text}
           image={shownCard.image}
           onClose={() => setShownCard(undefined)}
+        />
+      )}
+
+      {/* Modale Jardin Japonais */}
+      {isMyTurn && gameState.awaitingParkingChoice && me && (
+        <FreeParkingModal
+          gameState={gameState}
+          me={me}
+          onChoose={chooseParkingBoost}
+          onDecline={declineParkingBoost}
         />
       )}
 

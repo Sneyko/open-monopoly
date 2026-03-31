@@ -22,6 +22,8 @@ export const EVENTS = {
   AUCTION_PASS: 'auction_pass',
   KICK_PLAYER: 'kick_player',
   PLAYER_KICKED: 'player_kicked',
+  CHOOSE_PARKING_BOOST: 'choose_parking_boost',
+  DECLINE_PARKING_BOOST: 'decline_parking_boost',
 
   // Server → Client
   ROOM_CREATED: 'room_created',

@@ -20,6 +20,8 @@ export function useGame() {
   function unmortgageProperty(propertyId: number) { socket.emit('unmortgage_property', { propertyId }) }
   function buildHouse(propertyId: number) { socket.emit('build_house', { propertyId }) }
   function sellHouse(propertyId: number) { socket.emit('sell_house', { propertyId }) }
+  function chooseParkingBoost(propertyId: number) { socket.emit('choose_parking_boost', { propertyId }) }
+  function declineParkingBoost() { socket.emit('decline_parking_boost') }
 
   return {
     gameState,
@@ -36,5 +38,7 @@ export function useGame() {
     unmortgageProperty,
     buildHouse,
     sellHouse,
+    chooseParkingBoost,
+    declineParkingBoost,
   }
 }

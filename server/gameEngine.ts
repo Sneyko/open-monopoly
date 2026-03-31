@@ -185,13 +185,17 @@ function calculateRent(state: GameState, landingPlayerId: string, propertyIndex:
   }
 
   if (cell.type === 'property' && cell.colorGroup && cell.rents) {
-    if (prop.hotel) return cell.rents[5]
-    if (prop.houses > 0) return cell.rents[prop.houses]
-    // Terrain nu — double loyer si monopole complet
-    if (ownsFullGroup(state, ownerId, cell.colorGroup)) {
-      return cell.rents[0] * 2
+    let base: number
+    if (prop.hotel) base = cell.rents[5]
+    else if (prop.houses > 0) base = cell.rents[prop.houses]
+    else if (ownsFullGroup(state, ownerId, cell.colorGroup)) base = cell.rents[0] * 2
+    else base = cell.rents[0]
+
+    // Boost Jardin Japonais ×3
+    if (state.freeParkingBoost?.propertyId === propertyIndex && state.freeParkingBoost?.playerId === ownerId) {
+      base = base * 3
     }
-    return cell.rents[0]
+    return base
   }
 
   return 0
@@ -576,15 +580,22 @@ function applyCellEffect(state: GameState, playerId: string, position: number, d
       break
 
     case 'free-parking': {
-      const pot = s.freeParkingPot
-      if (pot > 0) {
-        s = { ...s, freeParkingPot: 0 }
-        s = transferMoney(s, 'bank', playerId, pot)
-        s = log(s, `${player.name} ramasse ${pot} € du Jardin Japonais !`, playerId)
+      // Le joueur a la possibilité de payer 200 € pour booster une de ses propriétés (loyer ×3)
+      const myProps = s.properties.filter(p => p.ownerId === playerId && !p.mortgaged)
+      if (myProps.length > 0) {
+        // Met le jeu en attente du choix du joueur
+        s = { ...s, awaitingParkingChoice: true }
+        const alreadyOwnsBoost = s.freeParkingBoost?.playerId === playerId
+        if (alreadyOwnsBoost) {
+          s = log(s, `${player.name} est au Jardin Japonais. Il peut changer sa propriété boostée (200 €) ou conserver l'actuelle (0 €).`, playerId)
+        } else {
+          s = log(s, `${player.name} est au Jardin Japonais. Payer 200 € pour booster une propriété ×3 ?`, playerId)
+        }
+        // Ne pas appeler nextPlayer — attend choose_parking_boost ou decline_parking_boost
       } else {
-        s = log(s, `${player.name} se repose au Jardin Japonais.`, playerId)
+        s = log(s, `${player.name} se repose au Jardin Japonais (aucune propriété à booster).`, playerId)
+        s = nextPlayer(s)
       }
-      s = nextPlayer(s)
       break
     }
 
@@ -701,6 +712,51 @@ export function declineProperty(
     },
   }
 
+  return { success: true, state: s }
+}
+
+// ─── Jardin Japonais — boost de loyer ─────────────────────────────────────────
+
+export function chooseParkingBoost(
+  state: GameState,
+  playerId: string,
+  propertyId: number,
+): { success: boolean; error?: string; state: GameState } {
+  if (state.currentPlayerId !== playerId) return { success: false, error: 'Ce n\'est pas votre tour.', state }
+  if (!state.awaitingParkingChoice) return { success: false, error: 'Pas de choix en attente.', state }
+
+  const player = state.players.find(p => p.id === playerId)!
+  const prop = state.properties.find(p => p.id === propertyId)
+
+  if (!prop || prop.ownerId !== playerId) {
+    return { success: false, error: 'Vous ne possédez pas cette propriété.', state }
+  }
+  if (prop.mortgaged) {
+    return { success: false, error: 'Cette propriété est hypothéquée.', state }
+  }
+  if (player.money < 200) {
+    return { success: false, error: 'Fonds insuffisants (200 € requis).', state }
+  }
+
+  const cell = getCellDef(propertyId)
+  let s = transferMoney(state, playerId, 'bank', 200)
+  s = { ...s, freeParkingBoost: { playerId, propertyId }, awaitingParkingChoice: false }
+  s = log(s, `${player.name} paie 200 € et booste le loyer de ${cell.name} ×3 !`, playerId)
+  s = nextPlayer(s)
+  return { success: true, state: s }
+}
+
+export function declineParkingBoost(
+  state: GameState,
+  playerId: string,
+): { success: boolean; error?: string; state: GameState } {
+  if (state.currentPlayerId !== playerId) return { success: false, error: 'Ce n\'est pas votre tour.', state }
+  if (!state.awaitingParkingChoice) return { success: false, error: 'Pas de choix en attente.', state }
+
+  const player = state.players.find(p => p.id === playerId)!
+  let s = { ...state, awaitingParkingChoice: false }
+  s = log(s, `${player.name} passe son tour au Jardin Japonais sans booster.`, playerId)
+  s = nextPlayer(s)
   return { success: true, state: s }
 }
 

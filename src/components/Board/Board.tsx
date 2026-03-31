@@ -41,6 +41,7 @@ interface BoardProps {
   onCellClick?: (index: number) => void;
   selectedCell?: number | null;
   currentPlayerId?: string;
+  boostedPropertyId?: number | null;
 }
 
 // ─── Données des cases ────────────────────────────────────────────────────────
@@ -367,7 +368,7 @@ function PawnCluster({ pawns, cx, cy, currentPlayerId }: { pawns: Player[]; cx: 
 
 // ─── Composant principal ──────────────────────────────────────────────────────
 
-const Board: React.FC<BoardProps> = ({ players, properties, onCellClick, selectedCell, currentPlayerId }) => {
+const Board: React.FC<BoardProps> = ({ players, properties, onCellClick, selectedCell, currentPlayerId, boostedPropertyId }) => {
   const [hoveredCell, setHoveredCell] = React.useState<number | null>(null);
 
   const propertyMap = new Map<number, Property>(
@@ -396,6 +397,20 @@ const Board: React.FC<BoardProps> = ({ players, properties, onCellClick, selecte
         style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}
         aria-hidden="true"
       >
+        <defs>
+          <style>{`
+            @keyframes boost-pulse {
+              0%,100% { opacity: 0.55; r: 6; }
+              50%      { opacity: 1;    r: 9; }
+            }
+            @keyframes boost-ring {
+              0%,100% { stroke-dashoffset: 0; }
+              100%    { stroke-dashoffset: -60; }
+            }
+            .boost-dot { animation: boost-pulse 1.4s ease-in-out infinite; }
+            .boost-ring-anim { animation: boost-ring 2s linear infinite; }
+          `}</style>
+        </defs>
         {/* Passe 1 : highlights hover/sélection + maisons */}
         {CELLS.map((cell) => {
           const rect = getCellRect(cell.index);
@@ -407,6 +422,7 @@ const Board: React.FC<BoardProps> = ({ players, properties, onCellClick, selecte
           const ownerColor = isOwned
             ? PLAYER_COLORS[(players.find(p => p.id === property!.ownerId)?.color ?? 'red')]
             : null;
+          const isBoosted = boostedPropertyId != null && cell.index === boostedPropertyId;
           const isSelected = selectedCell === cell.index;
           const isHovered  = hoveredCell  === cell.index;
 
@@ -442,6 +458,31 @@ const Board: React.FC<BoardProps> = ({ players, properties, onCellClick, selecte
                   isBottom={isBottom} isTop={isTop} isLeft={isLeft} isRight={isRight}
                 />
               )}
+
+              {/* Boost Jardin Japonais ⚡ — halo animé sur toute la case */}
+              {isBoosted && (() => {
+                const margin = 5;
+                const bcx = rect.cx;
+                const bcy = rect.cy;
+                return (
+                  <g>
+                    {/* Halo doré clignotant */}
+                    <rect
+                      x={x + margin} y={y + margin}
+                      width={w - margin * 2} height={h - margin * 2}
+                      rx={isCorner ? 4 : 3}
+                      fill="rgba(250,204,21,0.10)"
+                      stroke="#facc15"
+                      strokeWidth="3"
+                      strokeDasharray="18 8"
+                      className="boost-ring-anim"
+                    />
+                    {/* Badge ⚡ centré */}
+                    <circle cx={bcx} cy={bcy} r={16} fill="rgba(0,0,0,0.7)" className="boost-dot"/>
+                    <text x={bcx} y={bcy + 6} textAnchor="middle" fontSize="16" style={{ userSelect:'none' }}>⚡</text>
+                  </g>
+                );
+              })()}
 
               {/* Indicateur propriétaire (sans maison) : bande colorée opaque + pastille */}
               {isOwned && ownerColor && (() => {
