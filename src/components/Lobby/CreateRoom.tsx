@@ -15,7 +15,7 @@ const COLOR_HEX: Record<PlayerColor, string> = {
 
 export default function CreateRoom() {
   const socket = useSocket()
-  const { setMyPlayerId, setMyName, setMyColor } = useRoomStore()
+  const { setMyName, setMyColor } = useRoomStore()
   const [name, setName] = useState('')
   const [color, setColor] = useState<PlayerColor>('red')
 
@@ -24,10 +24,6 @@ export default function CreateRoom() {
     setMyName(name.trim())
     setMyColor(color)
     socket.emit('create_room', { playerName: name.trim(), color })
-
-    socket.once('room_created', ({ code }) => {
-      // playerId est généré côté serveur, on le stocke via room_updated
-    })
   }
 
   return (

@@ -11,60 +11,63 @@ type Screen = 'home' | 'create' | 'join' | 'waiting' | 'playing'
 
 export default function App() {
   const socket = useSocket()
-  const { room, myPlayerId, setRoom, setMyPlayerId } = useRoomStore()
+  const { room, myPlayerId, myName, myColor, setRoom, setMyPlayerId } = useRoomStore()
   const { gameState, setGameState } = useGameStore()
   const [screen, setScreen] = useState<Screen>('home')
   const [error, setError] = useState('')
+  const [connected, setConnected] = useState(socket.connected)
 
   useEffect(() => {
-    socket.on('room_created', ({ code }) => {
-      setScreen('waiting')
-    })
+    function onConnect() { setConnected(true) }
+    function onDisconnect() { setConnected(false) }
 
-    socket.on('room_updated', ({ room: roomInfo }) => {
-      setRoom(roomInfo)
-      // Identifier notre playerId à partir des joueurs
-      // On le stocke dans la room mais pas encore dans myPlayerId
-      // → on va chercher qui est nouveau à chaque update
+    function onRoomCreated() {
       setScreen('waiting')
-    })
+    }
 
-    socket.on('game_started', ({ gameState: gs }) => {
-      setGameState(gs)
+    function onRoomUpdated(data: { room: typeof room }) {
+      setRoom(data.room!)
+      setScreen('waiting')
+    }
+
+    function onGameStarted(data: { gameState: NonNullable<typeof gameState> }) {
+      setGameState(data.gameState)
       setScreen('playing')
-    })
+    }
 
-    socket.on('state_update', ({ gameState: gs }) => {
-      setGameState(gs)
-    })
+    function onStateUpdate(data: { gameState: NonNullable<typeof gameState> }) {
+      setGameState(data.gameState)
+    }
 
-    socket.on('game_over', ({ winnerId, winnerName }) => {
-      // GameView affiche le résultat
-    })
-
-    socket.on('error', ({ message }) => {
+    function onError({ message }: { message: string }) {
       setError(message)
       setTimeout(() => setError(''), 4000)
-    })
+    }
+
+    socket.on('connect', onConnect)
+    socket.on('disconnect', onDisconnect)
+    socket.on('room_created', onRoomCreated)
+    socket.on('room_updated', onRoomUpdated as never)
+    socket.on('game_started', onGameStarted as never)
+    socket.on('state_update', onStateUpdate as never)
+    socket.on('error', onError as never)
 
     return () => {
-      socket.off('room_created')
-      socket.off('room_updated')
-      socket.off('game_started')
-      socket.off('state_update')
-      socket.off('game_over')
-      socket.off('error')
+      socket.off('connect', onConnect)
+      socket.off('disconnect', onDisconnect)
+      socket.off('room_created', onRoomCreated)
+      socket.off('room_updated', onRoomUpdated as never)
+      socket.off('game_started', onGameStarted as never)
+      socket.off('state_update', onStateUpdate as never)
+      socket.off('error', onError as never)
     }
   }, [socket, setRoom, setGameState])
 
-  // Déterminer le playerId en comparant le nom
-  const { myName, myColor } = useRoomStore.getState()
+  // Résoudre le playerId dès que la room est disponible
   useEffect(() => {
-    if (room && myName) {
+    if (room && myName && !myPlayerId) {
       const me = room.players.find(p => p.name === myName && p.color === myColor)
-      if (me && !myPlayerId) {
-        setMyPlayerId(me.id)
-      }
+      if (me) setMyPlayerId(me.id)
     }
   }, [room, myName, myColor, myPlayerId, setMyPlayerId])
 
@@ -83,12 +86,13 @@ export default function App() {
   return (
     <div className="min-h-screen flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        {/* Logo */}
         <div className="text-center mb-8">
-          <h1 className="text-5xl font-extrabold text-white mb-1">
-            🎩 Monopoly
-          </h1>
+          <h1 className="text-5xl font-extrabold text-white mb-1">🎩 Monopoly</h1>
           <p className="text-gray-400 text-sm">Open-source • Multijoueur • En ligne</p>
+          <div className={`mt-2 text-xs inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full ${connected ? 'text-green-400' : 'text-red-400'}`}>
+            <span className={`w-1.5 h-1.5 rounded-full ${connected ? 'bg-green-400' : 'bg-red-400'}`} />
+            {connected ? 'Connecté au serveur' : 'Connexion au serveur…'}
+          </div>
         </div>
 
         {error && (
@@ -101,13 +105,15 @@ export default function App() {
           <div className="space-y-4">
             <button
               onClick={() => setScreen('create')}
-              className="w-full bg-blue-600 hover:bg-blue-700 py-4 rounded-xl font-bold text-xl transition-colors"
+              disabled={!connected}
+              className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-40 py-4 rounded-xl font-bold text-xl transition-colors"
             >
               Créer une partie
             </button>
             <button
               onClick={() => setScreen('join')}
-              className="w-full bg-gray-700 hover:bg-gray-600 py-4 rounded-xl font-bold text-xl transition-colors"
+              disabled={!connected}
+              className="w-full bg-gray-700 hover:bg-gray-600 disabled:opacity-40 py-4 rounded-xl font-bold text-xl transition-colors"
             >
               Rejoindre une partie
             </button>
