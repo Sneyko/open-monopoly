@@ -66,6 +66,7 @@ export default function GameView() {
             }))}
             properties={gameState.properties}
             onCellClick={(i) => setSelectedCell(prev => prev === i ? null : i)}
+            selectedCell={selectedCell}
           />
           {selectedCell !== null && (
             <CellInfoPanel

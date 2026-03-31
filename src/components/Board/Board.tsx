@@ -39,6 +39,7 @@ interface BoardProps {
   players: Player[];
   properties: Property[];
   onCellClick?: (index: number) => void;
+  selectedCell?: number | null;
 }
 
 // ─── Données des cases ────────────────────────────────────────────────────────
@@ -273,11 +274,11 @@ function HouseIndicator({
 function PawnCluster({ pawns, cx, cy }: { pawns: Player[]; cx: number; cy: number }) {
   const offsets = [
     { dx: 0,   dy: 0   },
-    { dx: -19, dy: -12 },
-    { dx: 19,  dy: -12 },
-    { dx: -19, dy: 12  },
-    { dx: 19,  dy: 12  },
-    { dx: 0,   dy: -24 },
+    { dx: -26, dy: -18 },
+    { dx: 26,  dy: -18 },
+    { dx: -26, dy: 18  },
+    { dx: 26,  dy: 18  },
+    { dx: 0,   dy: -36 },
   ];
 
   return (
@@ -289,10 +290,17 @@ function PawnCluster({ pawns, cx, cy }: { pawns: Player[]; cx: number; cy: numbe
         const color = PLAYER_COLORS[player.color];
         return (
           <g key={player.id}>
-            <ellipse cx={px} cy={py + 12} rx="12" ry="6" fill={color} opacity="0.5"/>
-            <rect x={px - 7} y={py} width="14" height="14" rx="2" fill={color}/>
-            <circle cx={px} cy={py - 7} r="10" fill={color}/>
-            <circle cx={px} cy={py - 7} r="5" fill="white" opacity="0.4"/>
+            {/* Ombre portée */}
+            <ellipse cx={px} cy={py + 18} rx="16" ry="8" fill="black" opacity="0.35"/>
+            {/* Corps */}
+            <ellipse cx={px} cy={py + 16} rx="15" ry="7" fill={color} opacity="0.6"/>
+            <rect x={px - 9} y={py} width="18" height="18" rx="3" fill={color}/>
+            {/* Tête */}
+            <circle cx={px} cy={py - 9} r="13" fill={color}/>
+            {/* Reflet */}
+            <circle cx={px - 4} cy={py - 13} r="5" fill="white" opacity="0.35"/>
+            {/* Bordure sombre pour lisibilité */}
+            <circle cx={px} cy={py - 9} r="13" fill="none" stroke="rgba(0,0,0,0.3)" strokeWidth="1.5"/>
           </g>
         );
       })}
@@ -302,7 +310,9 @@ function PawnCluster({ pawns, cx, cy }: { pawns: Player[]; cx: number; cy: numbe
 
 // ─── Composant principal ──────────────────────────────────────────────────────
 
-const Board: React.FC<BoardProps> = ({ players, properties, onCellClick }) => {
+const Board: React.FC<BoardProps> = ({ players, properties, onCellClick, selectedCell }) => {
+  const [hoveredCell, setHoveredCell] = React.useState<number | null>(null);
+
   const propertyMap = new Map<number, Property>(
     properties.map((p) => [p.id, p])
   );
@@ -326,29 +336,39 @@ const Board: React.FC<BoardProps> = ({ players, properties, onCellClick }) => {
       {/* Layer 2 — overlay interactif */}
       <svg
         viewBox={`0 0 ${S} ${S}`}
-        style={{
-          position: "absolute",
-          inset: 0,
-          width: "100%",
-          height: "100%",
-        }}
+        style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}
         aria-hidden="true"
       >
+        {/* Passe 1 : highlights hover/sélection + maisons */}
         {CELLS.map((cell) => {
           const rect = getCellRect(cell.index);
-          const { x, y, w, h, cx, cy, isBottom, isTop, isLeft, isRight } = rect;
+          const { x, y, w, h, isBottom, isTop, isLeft, isRight } = rect;
           const property = propertyMap.get(cell.index);
-          const pawns = pawnsByPosition.get(cell.index) ?? [];
           const isCorner = [0, 10, 20, 30].includes(cell.index);
           const hasHouses = !isCorner && ((property?.houses ?? 0) > 0 || (property?.hotel ?? false));
+          const isSelected = selectedCell === cell.index;
+          const isHovered  = hoveredCell  === cell.index;
 
           return (
             <g key={cell.index}>
-              {/* Zone cliquable invisible */}
+              {/* Zone cliquable + hover */}
               <rect
                 x={x} y={y} width={w} height={h}
-                fill="transparent"
+                fill={
+                  isSelected ? "rgba(255,210,0,0.18)"
+                  : isHovered ? "rgba(255,255,255,0.10)"
+                  : "transparent"
+                }
+                stroke={
+                  isSelected ? "rgba(255,210,0,0.85)"
+                  : isHovered ? "rgba(255,255,255,0.45)"
+                  : "none"
+                }
+                strokeWidth={isSelected ? 4 : 3}
+                rx={isCorner ? 6 : 3}
                 onClick={onCellClick ? () => onCellClick(cell.index) : undefined}
+                onMouseEnter={() => setHoveredCell(cell.index)}
+                onMouseLeave={() => setHoveredCell(null)}
                 style={{ cursor: onCellClick ? "pointer" : "default" }}
               />
 
@@ -361,13 +381,16 @@ const Board: React.FC<BoardProps> = ({ players, properties, onCellClick }) => {
                   isBottom={isBottom} isTop={isTop} isLeft={isLeft} isRight={isRight}
                 />
               )}
-
-              {/* Pions */}
-              {pawns.length > 0 && (
-                <PawnCluster pawns={pawns} cx={cx} cy={cy} />
-              )}
             </g>
           );
+        })}
+
+        {/* Passe 2 : pions (toujours au-dessus de tout) */}
+        {CELLS.map((cell) => {
+          const { cx, cy } = getCellRect(cell.index);
+          const pawns = pawnsByPosition.get(cell.index) ?? [];
+          if (pawns.length === 0) return null;
+          return <PawnCluster key={`pawns-${cell.index}`} pawns={pawns} cx={cx} cy={cy} />;
         })}
       </svg>
     </div>
