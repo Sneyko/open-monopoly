@@ -110,6 +110,7 @@ export interface ServerToClientEvents {
   game_started: (data: { gameState: GameState }) => void
   state_update: (data: { gameState: GameState }) => void
   player_disconnected: (data: { playerId: string; playerName: string }) => void
+  player_kicked: (data: { playerId: string; playerName: string }) => void
   game_over: (data: { winnerId: string; winnerName: string }) => void
   error: (data: { message: string }) => void
   auction_update: (data: { auction: AuctionState }) => void
@@ -135,4 +136,6 @@ export interface ClientToServerEvents {
   use_get_out_of_jail_card: () => void
   auction_bid: (data: { amount: number }) => void
   auction_pass: () => void
+  kick_player: (data: { targetPlayerId: string }) => void
 }
+

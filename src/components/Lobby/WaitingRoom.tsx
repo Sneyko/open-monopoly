@@ -41,16 +41,25 @@ export default function WaitingRoom({ room, myPlayerId }: WaitingRoomProps) {
         <div className="space-y-2">
           {room.players.map(player => (
             <div key={player.id} className="flex items-center gap-3">
-              <div className="w-4 h-4 rounded-full ring-2 ring-white/10"
+              <div className="w-4 h-4 rounded-full ring-2 ring-white/10 flex-shrink-0"
                 style={{ backgroundColor: COLOR_HEX[player.color] ?? '#888' }} />
-              <span className="font-medium text-sm text-white">{player.name}</span>
-              <div className="ml-auto flex items-center gap-2">
+              <span className="font-medium text-sm text-white truncate">{player.name}</span>
+              <div className="ml-auto flex items-center gap-2 flex-shrink-0">
                 {player.id === myPlayerId &&
                   <span className="text-[10px] text-white/30">vous</span>}
                 {player.id === room.hostId &&
                   <span className="text-[10px] bg-yellow-500/20 text-yellow-300 px-2 py-0.5 rounded-full font-semibold">
                     Hôte
                   </span>}
+                {isHost && player.id !== myPlayerId && (
+                  <button
+                    onClick={() => socket.emit('kick_player', { targetPlayerId: player.id })}
+                    title="Exclure ce joueur"
+                    className="w-5 h-5 flex items-center justify-center rounded-full bg-red-500/15 hover:bg-red-500/35 text-red-400 hover:text-red-300 transition-colors text-xs font-bold"
+                  >
+                    ✕
+                  </button>
+                )}
               </div>
             </div>
           ))}

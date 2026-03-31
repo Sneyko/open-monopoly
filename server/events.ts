@@ -20,6 +20,8 @@ export const EVENTS = {
   USE_GET_OUT_OF_JAIL_CARD: 'use_get_out_of_jail_card',
   AUCTION_BID: 'auction_bid',
   AUCTION_PASS: 'auction_pass',
+  KICK_PLAYER: 'kick_player',
+  PLAYER_KICKED: 'player_kicked',
 
   // Server → Client
   ROOM_CREATED: 'room_created',

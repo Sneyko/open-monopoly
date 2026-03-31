@@ -133,6 +133,35 @@ export function reconnectPlayer(
   return room
 }
 
+export function kickPlayer(
+  roomCode: string,
+  hostId: string,
+  targetPlayerId: string,
+): { success: true; room: Room; kicked: RoomPlayer } | { success: false; error: string } {
+  const room = getRoom(roomCode)
+  if (!room) return { success: false, error: 'Salle introuvable.' }
+  if (room.hostId !== hostId) return { success: false, error: 'Seul l\'hôte peut exclure des joueurs.' }
+  if (targetPlayerId === hostId) return { success: false, error: 'L\'hôte ne peut pas s\'exclure lui-même.' }
+
+  const idx = room.players.findIndex(p => p.id === targetPlayerId)
+  if (idx === -1) return { success: false, error: 'Joueur introuvable.' }
+
+  const [kicked] = room.players.splice(idx, 1)
+
+  // Pendant la partie : libère ses propriétés, retire du gameState
+  if (room.gameState) {
+    room.gameState = {
+      ...room.gameState,
+      players: room.gameState.players.filter(p => p.id !== targetPlayerId),
+      properties: room.gameState.properties.map(p =>
+        p.ownerId === targetPlayerId ? { ...p, ownerId: undefined, houses: 0, hotel: false, mortgaged: false } : p
+      ),
+    }
+  }
+
+  return { success: true, room, kicked }
+}
+
 export function updateRoom(room: Room): void {
   room.lastActivity = Date.now()
   rooms.set(room.code, room)

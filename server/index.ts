@@ -4,7 +4,7 @@ import { Server } from 'socket.io'
 import { nanoid } from 'nanoid'
 import type { ServerToClientEvents, ClientToServerEvents, PlayerColor, TradeOffer } from '../shared/types'
 import {
-  createRoom, getRoom, joinRoom, setPlayerDisconnected, updateRoom, roomToInfo,
+  createRoom, getRoom, joinRoom, setPlayerDisconnected, updateRoom, roomToInfo, kickPlayer,
 } from './rooms'
 import { EVENTS } from './events'
 import * as engine from './gameEngine'
@@ -191,6 +191,29 @@ io.on('connection', (socket) => {
   })
 
   // ─── Déconnexion ─────────────────────────────────────────────────────────
+
+  socket.on(EVENTS.KICK_PLAYER, ({ targetPlayerId }: { targetPlayerId: string }) => {
+    if (!currentPlayerId || !currentRoomCode) return
+    const result = kickPlayer(currentRoomCode, currentPlayerId, targetPlayerId)
+    if (!result.success) { socket.emit(EVENTS.ERROR, { message: result.error }); return }
+
+    const { room, kicked } = result
+    updateRoom(room)
+
+    // Notifier + déconnecter le joueur exclu
+    const kickedSocket = io.sockets.sockets.get(kicked.socketId)
+    if (kickedSocket) {
+      kickedSocket.emit(EVENTS.ERROR, { message: 'Vous avez été exclu de la partie.' })
+      kickedSocket.leave(room.code)
+    }
+    io.to(room.code).emit(EVENTS.PLAYER_KICKED, { playerId: kicked.id, playerName: kicked.name })
+
+    if (room.phase === 'lobby') {
+      io.to(room.code).emit(EVENTS.ROOM_UPDATED, { room: roomToInfo(room) })
+    } else if (room.gameState) {
+      io.to(room.code).emit(EVENTS.STATE_UPDATE, { gameState: room.gameState })
+    }
+  })
 
   socket.on('disconnect', () => {
     const result = setPlayerDisconnected(socket.id)

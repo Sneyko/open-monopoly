@@ -8,6 +8,8 @@ import CellInfoPanel from './UI/CellInfoPanel'
 import CardRevealModal from './UI/CardRevealModal'
 import { useGame } from '../hooks/useGame'
 import { useSocket } from '../hooks/useSocket'
+import { useAnimatedPlayers } from '../hooks/useAnimatedPlayers'
+import { useRoomStore } from '../store/roomStore'
 import type { TradeOffer } from '../../shared/types'
 
 const COLOR_HEX: Record<string, string> = {
@@ -22,10 +24,14 @@ export default function GameView() {
     payJailFine, useGetOutOfJailCard, declareBankruptcy,
   } = useGame()
   const socket = useSocket()
+  const { room } = useRoomStore()
+  const isHost = room?.hostId === myPlayerId
   const [showTrade, setShowTrade] = useState(false)
   const [selectedCell, setSelectedCell] = useState<number | null>(null)
   const [shownCard, setShownCard] = useState<typeof gameState.lastCard>(undefined)
   const prevCardRef = useRef<string | undefined>(undefined)
+
+  const animatedPlayers = useAnimatedPlayers(gameState?.players ?? [])
 
   // Déclenche la modale quand lastCard change (nouvelle carte tirée)
   useEffect(() => {
@@ -74,7 +80,7 @@ export default function GameView() {
       <div className="flex-1 flex items-center justify-center p-3 min-w-0">
         <div style={{ width: 'min(calc(100vh - 1.5rem), calc(100vw - 320px))', aspectRatio: '1', position: 'relative' }}>
           <Board
-            players={gameState.players.map(p => ({
+            players={animatedPlayers.map(p => ({
               id: p.id, name: p.name, color: p.color, position: p.position,
             }))}
             properties={gameState.properties}
@@ -203,13 +209,24 @@ export default function GameView() {
         {/* Joueurs */}
         <div className="space-y-1.5">
           {gameState.players.map(player => (
-            <PlayerCard
-              key={player.id}
-              player={player}
-              properties={gameState.properties}
-              isCurrentTurn={player.id === gameState.currentPlayerId}
-              isMe={player.id === myPlayerId}
-            />
+            <div key={player.id} className="relative group">
+              <PlayerCard
+                player={player}
+                properties={gameState.properties}
+                isCurrentTurn={player.id === gameState.currentPlayerId}
+                isMe={player.id === myPlayerId}
+              />
+              {/* Bouton kick : hôte uniquement, joueur déconnecté, pas soi-même */}
+              {isHost && !player.isConnected && player.id !== myPlayerId && (
+                <button
+                  onClick={() => socket.emit('kick_player', { targetPlayerId: player.id })}
+                  title="Exclure ce joueur déconnecté"
+                  className="absolute top-2 right-2 w-5 h-5 flex items-center justify-center rounded-full bg-red-500/20 hover:bg-red-500/40 text-red-400 hover:text-red-200 transition-colors text-[10px] font-bold"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
           ))}
         </div>
 
