@@ -261,6 +261,7 @@ function nextPlayer(state: GameState): GameState {
     currentPlayerId: activePlayers[nextIndex].id,
     doublesCount: 0,
     turn: state.turn + 1,
+    lastDice: undefined,   // réinitialise pour que le prochain joueur puisse lancer
   }
 }
 

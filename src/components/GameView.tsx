@@ -50,9 +50,8 @@ export default function GameView() {
   const cellAtMyPosition = gameState.properties.find(p => p.id === (me?.position ?? -1))
   const canBuy = isMyTurn && !!cellAtMyPosition && !cellAtMyPosition.ownerId
   const meInJail = me?.inJail ?? false
-  // A déjà lancé les dés ce tour si lastDice existe et c'est mon tour
-  // (simplifié : on considère qu'il peut relancer si double)
-  const hasRolled = !isMyTurn || (gameState.lastDice != null && !canBuy)
+  // A lancé les dés si lastDice est défini ET qu'on n'a pas fait de double (le double autorise à relancer)
+  const hasRolled = !isMyTurn || (gameState.lastDice != null && gameState.doublesCount === 0)
 
   if (gameState.phase === 'ended') {
     const winner = gameState.players.find(p => !p.isBankrupt)
