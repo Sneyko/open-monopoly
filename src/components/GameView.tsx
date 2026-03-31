@@ -4,6 +4,7 @@ import Dice from './UI/Dice'
 import PlayerCard from './UI/PlayerCard'
 import GameLog from './UI/GameLog'
 import TradeModal from './UI/TradeModal'
+import CellInfoPanel from './UI/CellInfoPanel'
 import { useGame } from '../hooks/useGame'
 import { useSocket } from '../hooks/useSocket'
 import type { TradeOffer } from '../../shared/types'
@@ -21,6 +22,7 @@ export default function GameView() {
   } = useGame()
   const socket = useSocket()
   const [showTrade, setShowTrade] = useState(false)
+  const [selectedCell, setSelectedCell] = useState<number | null>(null)
 
   if (!gameState) return null
 
@@ -57,13 +59,22 @@ export default function GameView() {
 
       {/* ── Plateau (dominant) ── */}
       <div className="flex-1 flex items-center justify-center p-3 min-w-0">
-        <div style={{ width: 'min(calc(100vh - 1.5rem), calc(100vw - 320px))', aspectRatio: '1' }}>
+        <div style={{ width: 'min(calc(100vh - 1.5rem), calc(100vw - 320px))', aspectRatio: '1', position: 'relative' }}>
           <Board
             players={gameState.players.map(p => ({
               id: p.id, name: p.name, color: p.color, position: p.position,
             }))}
             properties={gameState.properties}
+            onCellClick={(i) => setSelectedCell(prev => prev === i ? null : i)}
           />
+          {selectedCell !== null && (
+            <CellInfoPanel
+              cellIndex={selectedCell}
+              property={gameState.properties.find(p => p.id === selectedCell)}
+              players={gameState.players}
+              onClose={() => setSelectedCell(null)}
+            />
+          )}
         </div>
       </div>
 
