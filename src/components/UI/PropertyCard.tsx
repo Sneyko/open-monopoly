@@ -34,9 +34,9 @@ const CELL_DATA: Partial<CellDef>[] = [
   {index:26,name:'Fg Saint-Honoré',price:260,colorGroup:'yellow',mortgage:130,houseCost:150,rents:[22,110,330,800,975,1150]},
   {index:27,name:'Place de la Bourse',price:260,colorGroup:'yellow',mortgage:130,houseCost:150,rents:[22,110,330,800,975,1150]},
   {index:28,name:'Cie des Eaux',price:150,mortgage:75},
-  {index:29,name:'Rue La Fayette',price:280,colorGroup:'yellow',mortgage:140,houseCost:150,rents:[24,120,360,850,1025,1200]},
+  {index:29,name:'Rue La €ayette',price:280,colorGroup:'yellow',mortgage:140,houseCost:150,rents:[24,120,360,850,1025,1200]},
   {},{index:31,name:'Av. de Breteuil',price:300,colorGroup:'green',mortgage:150,houseCost:200,rents:[26,130,390,900,1100,1275]},
-  {index:32,name:'Avenue Foch',price:300,colorGroup:'green',mortgage:150,houseCost:200,rents:[26,130,390,900,1100,1275]},
+  {index:32,name:'Avenue €och',price:300,colorGroup:'green',mortgage:150,houseCost:200,rents:[26,130,390,900,1100,1275]},
   {},{index:34,name:'Bd des Capucines',price:320,colorGroup:'green',mortgage:160,houseCost:200,rents:[28,150,450,1000,1200,1400]},
   {index:35,name:'Gare St-Lazare',price:200,mortgage:100,rents:[25,50,100,200]},
   {},{index:37,name:'Av. des Champs-Élysées',price:350,colorGroup:'dark-blue',mortgage:175,houseCost:200,rents:[35,175,500,1100,1300,1500]},
@@ -84,25 +84,25 @@ export default function PropertyCard({ property, ownerName, canBuy, onBuy, onDec
       )}
 
       <div className="p-3">
-        <div className="text-center text-xl font-bold mb-2">{cell.price} F</div>
+        <div className="text-center text-xl font-bold mb-2">{cell.price} €</div>
 
         {cell.rents && (
           <div className="text-xs space-y-0.5">
-            <div className="flex justify-between"><span>Loyer nu</span><span>{cell.rents[0]} F</span></div>
+            <div className="flex justify-between"><span>Loyer nu</span><span>{cell.rents[0]} €</span></div>
             {cell.rents.length > 2 && <>
-              <div className="flex justify-between"><span>1 maison</span><span>{cell.rents[1]} F</span></div>
-              <div className="flex justify-between"><span>2 maisons</span><span>{cell.rents[2]} F</span></div>
-              <div className="flex justify-between"><span>3 maisons</span><span>{cell.rents[3]} F</span></div>
-              <div className="flex justify-between"><span>4 maisons</span><span>{cell.rents[4]} F</span></div>
-              <div className="flex justify-between font-semibold"><span>Hôtel</span><span>{cell.rents[5]} F</span></div>
+              <div className="flex justify-between"><span>1 maison</span><span>{cell.rents[1]} €</span></div>
+              <div className="flex justify-between"><span>2 maisons</span><span>{cell.rents[2]} €</span></div>
+              <div className="flex justify-between"><span>3 maisons</span><span>{cell.rents[3]} €</span></div>
+              <div className="flex justify-between"><span>4 maisons</span><span>{cell.rents[4]} €</span></div>
+              <div className="flex justify-between font-semibold"><span>Hôtel</span><span>{cell.rents[5]} €</span></div>
             </>}
             {cell.houseCost && (
               <div className="flex justify-between border-t pt-1 mt-1">
-                <span>Maison</span><span>{cell.houseCost} F</span>
+                <span>Maison</span><span>{cell.houseCost} €</span>
               </div>
             )}
             {cell.mortgage && (
-              <div className="flex justify-between"><span>Hypothèque</span><span>{cell.mortgage} F</span></div>
+              <div className="flex justify-between"><span>Hypothèque</span><span>{cell.mortgage} €</span></div>
             )}
           </div>
         )}
@@ -132,7 +132,7 @@ export default function PropertyCard({ property, ownerName, canBuy, onBuy, onDec
           {!canBuy && onClose && (
             <button onClick={onClose}
               className="flex-1 bg-gray-200 text-gray-700 text-sm py-1 rounded hover:bg-gray-300">
-              Fermer
+              €ermer
             </button>
           )}
         </div>

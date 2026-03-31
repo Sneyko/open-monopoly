@@ -30,6 +30,7 @@ export type CardDeck = 'chance' | 'community'
 export interface Card {
   id: string
   text: string
+  image: string   // nom du fichier SVG, ex: 'c1.svg'
   action: CardAction
 }
 
@@ -79,6 +80,7 @@ export interface GameState {
     community: Card[]
   }
   log: GameEvent[]
+  lastCard?: { deck: 'chance' | 'community'; text: string; image: string }
   lastDice?: [number, number]
   doublesCount: number
   pendingTrade?: TradeOffer

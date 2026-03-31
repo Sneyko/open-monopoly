@@ -31,11 +31,11 @@ const GROUP_HEX: Record<string, string> = {
 }
 
 const CELL_INFO: CellInfo[] = [
-  { index: 0,  name: 'DÉPART',               type: 'go',          description: 'Recevez 200 F en passant par cette case.' },
+  { index: 0,  name: 'DÉPART',               type: 'go',          description: 'Recevez 200 € en passant par cette case.' },
   { index: 1,  name: 'Reynerie',              type: 'property',    colorGroup: 'brown',      colorHex: GROUP_HEX.brown,       price: 60,  rents: [2,10,30,90,160,250],     mortgage: 30,  houseCost: 50 },
   { index: 2,  name: 'Caisse IZLY',           type: 'community',   description: 'Piochez une carte IZLY.' },
   { index: 3,  name: 'Bellefontaine',         type: 'property',    colorGroup: 'brown',      colorHex: GROUP_HEX.brown,       price: 60,  rents: [4,20,60,180,320,450],    mortgage: 30,  houseCost: 50 },
-  { index: 4,  name: 'Gemini Mensuel',        type: 'tax',         tax: 200,  description: 'Payez 200 F.' },
+  { index: 4,  name: 'Gemini Mensuel',        type: 'tax',         tax: 200,  description: 'Payez 200 €.' },
   { index: 5,  name: 'Nine',                  type: 'railroad',    price: 200, rents: [25,50,100,200], mortgage: 100, description: 'Club étudiant' },
   { index: 6,  name: 'Basso Cambo',           type: 'property',    colorGroup: 'light-blue', colorHex: GROUP_HEX['light-blue'],price: 100, rents: [6,30,90,270,400,550],    mortgage: 50,  houseCost: 50 },
   { index: 7,  name: 'Chance',                type: 'chance',      description: 'Piochez une carte Chance.' },
@@ -59,7 +59,7 @@ const CELL_INFO: CellInfo[] = [
   { index: 25, name: 'O\'club',               type: 'railroad',    price: 200, rents: [25,50,100,200], mortgage: 100, description: 'Club étudiant' },
   { index: 26, name: 'Jeanne d\'Arc',         type: 'property',    colorGroup: 'yellow',     colorHex: GROUP_HEX.yellow,      price: 260, rents: [22,110,330,800,975,1150], mortgage: 130, houseCost: 150 },
   { index: 27, name: 'Compans-Caffarelli',    type: 'property',    colorGroup: 'yellow',     colorHex: GROUP_HEX.yellow,      price: 260, rents: [22,110,330,800,975,1150], mortgage: 130, houseCost: 150 },
-  { index: 28, name: 'Facture Fibre',         type: 'utility',     price: 150, mortgage: 75,  description: 'Loyer = 4× les dés (seul) ou 10× (2 services).' },
+  { index: 28, name: 'Facture €ibre',         type: 'utility',     price: 150, mortgage: 75,  description: 'Loyer = 4× les dés (seul) ou 10× (2 services).' },
   { index: 29, name: 'Palais de Justice',     type: 'property',    colorGroup: 'yellow',     colorHex: GROUP_HEX.yellow,      price: 280, rents: [24,120,360,850,1025,1200], mortgage: 140, houseCost: 150 },
   { index: 30, name: 'EN TD',                 type: 'go-to-jail',  description: 'Allez directement en TD. Ne passez pas par Départ.' },
   { index: 31, name: 'François-Verdier',      type: 'property',    colorGroup: 'green',      colorHex: GROUP_HEX.green,       price: 300, rents: [26,130,390,900,1100,1275], mortgage: 150, houseCost: 200 },
@@ -69,7 +69,7 @@ const CELL_INFO: CellInfo[] = [
   { index: 35, name: 'Magma Club',            type: 'railroad',    price: 200, rents: [25,50,100,200], mortgage: 100, description: 'Club étudiant' },
   { index: 36, name: 'Chance',                type: 'chance',      description: 'Piochez une carte Chance.' },
   { index: 37, name: 'Capitole',              type: 'property',    colorGroup: 'dark-blue',  colorHex: GROUP_HEX['dark-blue'], price: 350, rents: [35,175,500,1100,1300,1500], mortgage: 175, houseCost: 200 },
-  { index: 38, name: 'Frais de scolarité',    type: 'tax',         tax: 100,  description: 'Payez 100 F.' },
+  { index: 38, name: 'Frais de scolarité',    type: 'tax',         tax: 100,  description: 'Payez 100 €.' },
   { index: 39, name: 'Jean-Jaurès',           type: 'property',    colorGroup: 'dark-blue',  colorHex: GROUP_HEX['dark-blue'], price: 400, rents: [50,200,600,1400,1700,2000], mortgage: 200, houseCost: 200 },
 ]
 
@@ -163,7 +163,7 @@ export default function CellInfoPanel({ cellIndex, property, players, onClose }:
         {info.price && (
           <div className="flex justify-between items-center">
             <span className="text-white/40 text-xs">Prix</span>
-            <span className="font-bold text-white">{info.price.toLocaleString()} F</span>
+            <span className="font-bold text-white">{info.price.toLocaleString()} €</span>
           </div>
         )}
 
@@ -171,7 +171,7 @@ export default function CellInfoPanel({ cellIndex, property, players, onClose }:
         {info.tax && (
           <div className="flex justify-between items-center">
             <span className="text-white/40 text-xs">Montant</span>
-            <span className="font-bold text-red-400">{info.tax.toLocaleString()} F</span>
+            <span className="font-bold text-red-400">{info.tax.toLocaleString()} €</span>
           </div>
         )}
 
@@ -211,7 +211,7 @@ export default function CellInfoPanel({ cellIndex, property, players, onClose }:
         {currentRent !== null && owner && !mortgaged && (
           <div className="flex justify-between items-center bg-white/4 rounded-lg px-3 py-1.5">
             <span className="text-white/50 text-xs">Loyer actuel</span>
-            <span className="font-bold text-yellow-400 text-sm">{currentRent.toLocaleString()} F</span>
+            <span className="font-bold text-yellow-400 text-sm">{currentRent.toLocaleString()} €</span>
           </div>
         )}
 
@@ -229,7 +229,7 @@ export default function CellInfoPanel({ cellIndex, property, players, onClose }:
             ].map(([label, value]) => (
               <div key={label as string} className="flex justify-between text-xs">
                 <span className="text-white/35">{label}</span>
-                <span className="text-white/70 font-medium">{(value as number).toLocaleString()} F</span>
+                <span className="text-white/70 font-medium">{(value as number).toLocaleString()} €</span>
               </div>
             ))}
           </div>
@@ -242,7 +242,7 @@ export default function CellInfoPanel({ cellIndex, property, players, onClose }:
             {info.rents.map((rent, i) => (
               <div key={i} className="flex justify-between text-xs">
                 <span className="text-white/35">{i + 1} club{i > 0 ? 's' : ''}</span>
-                <span className="text-white/70 font-medium">{rent.toLocaleString()} F</span>
+                <span className="text-white/70 font-medium">{rent.toLocaleString()} €</span>
               </div>
             ))}
           </div>
@@ -254,13 +254,13 @@ export default function CellInfoPanel({ cellIndex, property, players, onClose }:
             {info.mortgage && (
               <div className="flex justify-between text-xs">
                 <span className="text-white/30">Hypothèque</span>
-                <span className="text-white/50">{info.mortgage.toLocaleString()} F</span>
+                <span className="text-white/50">{info.mortgage.toLocaleString()} €</span>
               </div>
             )}
             {info.houseCost && (
               <div className="flex justify-between text-xs">
                 <span className="text-white/30">Maison / Hôtel</span>
-                <span className="text-white/50">{info.houseCost.toLocaleString()} F</span>
+                <span className="text-white/50">{info.houseCost.toLocaleString()} €</span>
               </div>
             )}
           </div>

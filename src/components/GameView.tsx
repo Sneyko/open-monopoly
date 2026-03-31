@@ -1,10 +1,11 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import Board from './Board/Board'
 import Dice from './UI/Dice'
 import PlayerCard from './UI/PlayerCard'
 import GameLog from './UI/GameLog'
 import TradeModal from './UI/TradeModal'
 import CellInfoPanel from './UI/CellInfoPanel'
+import CardRevealModal from './UI/CardRevealModal'
 import { useGame } from '../hooks/useGame'
 import { useSocket } from '../hooks/useSocket'
 import type { TradeOffer } from '../../shared/types'
@@ -23,6 +24,18 @@ export default function GameView() {
   const socket = useSocket()
   const [showTrade, setShowTrade] = useState(false)
   const [selectedCell, setSelectedCell] = useState<number | null>(null)
+  const [shownCard, setShownCard] = useState<typeof gameState.lastCard>(undefined)
+  const prevCardRef = useRef<string | undefined>(undefined)
+
+  // Déclenche la modale quand lastCard change (nouvelle carte tirée)
+  useEffect(() => {
+    if (!gameState?.lastCard) return
+    const key = `${gameState.lastCard.image}-${gameState.lastCard.text}`
+    if (key !== prevCardRef.current) {
+      prevCardRef.current = key
+      setShownCard(gameState.lastCard)
+    }
+  }, [gameState?.lastCard])
 
   if (!gameState) return null
 
@@ -67,6 +80,7 @@ export default function GameView() {
             properties={gameState.properties}
             onCellClick={(i) => setSelectedCell(prev => prev === i ? null : i)}
             selectedCell={selectedCell}
+            currentPlayerId={gameState.currentPlayerId}
           />
           {selectedCell !== null && (
             <CellInfoPanel
@@ -120,7 +134,7 @@ export default function GameView() {
               <div className="text-xs text-orange-300 text-center font-medium">🔒 Vous êtes en prison</div>
               <button onClick={payJailFine}
                 className="w-full bg-orange-500/20 hover:bg-orange-500/30 border border-orange-500/40 text-orange-300 py-2 rounded-lg text-sm font-semibold transition-all">
-                Payer 50 F et sortir
+                Payer 50 € et sortir
               </button>
               {(me?.getOutOfJailCards ?? 0) > 0 && (
                 <button onClick={useGetOutOfJailCard}
@@ -181,7 +195,7 @@ export default function GameView() {
           <div className="bg-white/4 border border-white/8 rounded-xl px-3 py-2 flex items-center justify-between">
             <span className="text-xs text-white/40">🅿️ Parc Gratuit</span>
             <span className="text-sm font-bold text-yellow-400">
-              {gameState.freeParkingPot.toLocaleString()} F
+              {gameState.freeParkingPot.toLocaleString()} €
             </span>
           </div>
         )}
@@ -204,6 +218,16 @@ export default function GameView() {
           <GameLog events={gameState.log} />
         </div>
       </div>
+
+      {/* Modale carte Chance / IZLY */}
+      {shownCard && (
+        <CardRevealModal
+          deck={shownCard.deck}
+          text={shownCard.text}
+          image={shownCard.image}
+          onClose={() => setShownCard(undefined)}
+        />
+      )}
 
       {/* Modale d'échange */}
       {showTrade && (

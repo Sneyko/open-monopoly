@@ -48,7 +48,7 @@ export default function PlayerCard({ player, properties, isCurrentTurn, isMe }: 
 
         <div className="flex items-end justify-between">
           <span className="text-lg font-black text-emerald-400 leading-none">
-            {player.money.toLocaleString()} F
+            {player.money.toLocaleString()} €
           </span>
           <div className="flex items-center gap-2 text-xs text-white/50">
             {owned.length > 0 && <span>{owned.length} prop.</span>}

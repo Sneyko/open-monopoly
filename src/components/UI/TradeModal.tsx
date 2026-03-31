@@ -51,8 +51,8 @@ export default function TradeModal({
         <div className="bg-gray-800 rounded-xl p-6 w-96 max-w-full">
           <h2 className="text-xl font-bold mb-4">Offre d'échange de {from?.name}</h2>
           <div className="text-sm space-y-2 mb-4">
-            <div>Il offre : {pendingTrade.offer.money} F + {pendingTrade.offer.propertyIds.length} propriété(s)</div>
-            <div>Il demande : {pendingTrade.request.money} F + {pendingTrade.request.propertyIds.length} propriété(s)</div>
+            <div>Il offre : {pendingTrade.offer.money} € +{pendingTrade.offer.propertyIds.length} propriété(s)</div>
+            <div>Il demande : {pendingTrade.request.money} € +{pendingTrade.request.propertyIds.length} propriété(s)</div>
           </div>
           <div className="flex gap-3">
             <button onClick={() => { onAccept(pendingTrade.id); onClose() }}

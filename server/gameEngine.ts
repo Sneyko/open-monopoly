@@ -78,44 +78,25 @@ const MORTGAGE_INTEREST = 0.1
 
 function buildChanceDeck(): Card[] {
   const cards: Card[] = [
-    { id: 'ch1', text: 'Avancez jusqu\'à la Case Départ. Recevez 200 F.', action: { type: 'move_to', position: 0, collectSalary: true } },
-    { id: 'ch2', text: 'Avancez jusqu\'à la Rue de la Paix.', action: { type: 'move_to', position: 39, collectSalary: true } },
-    { id: 'ch3', text: 'Avancez jusqu\'aux Champs-Élysées.', action: { type: 'move_to', position: 37, collectSalary: true } },
-    { id: 'ch4', text: 'Avancez jusqu\'à la prochaine gare.', action: { type: 'move_to_nearest', cellType: 'railroad' } },
-    { id: 'ch5', text: 'Avancez jusqu\'à la prochaine gare.', action: { type: 'move_to_nearest', cellType: 'railroad' } },
-    { id: 'ch6', text: 'Avancez jusqu\'à la prochaine compagnie.', action: { type: 'move_to_nearest', cellType: 'utility' } },
-    { id: 'ch7', text: 'La banque vous verse 50 F.', action: { type: 'receive', amount: 50 } },
-    { id: 'ch8', text: 'Vous êtes libéré de prison. Conservez cette carte.', action: { type: 'get_out_of_jail' } },
-    { id: 'ch9', text: 'Reculez de 3 cases.', action: { type: 'go_back', steps: 3 } },
-    { id: 'ch10', text: 'Allez en prison.', action: { type: 'go_to_jail' } },
-    { id: 'ch11', text: 'Payez 25 F pour chaque maison et 100 F pour chaque hôtel.', action: { type: 'pay_per_building', houseAmount: 25, hotelAmount: 100 } },
-    { id: 'ch12', text: 'Payez 15 F d\'amende.', action: { type: 'pay', amount: 15 } },
-    { id: 'ch13', text: 'Avancez jusqu\'à la Gare Montparnasse.', action: { type: 'move_to', position: 5, collectSalary: true } },
-    { id: 'ch14', text: 'Avancez jusqu\'à la Place Pigalle.', action: { type: 'move_to', position: 19, collectSalary: true } },
-    { id: 'ch15', text: 'Recevez 150 F en dividendes.', action: { type: 'receive', amount: 150 } },
-    { id: 'ch16', text: 'Remboursement d\'impôts — recevez 100 F.', action: { type: 'receive', amount: 100 } },
+    { id: 'ch1', text: 'Départ immédiat : avancez jusqu\'à la case Départ. Recevez 200 €.', image: 'c1.svg', action: { type: 'move_to', position: 0, collectSalary: true } },
+    { id: 'ch2', text: 'Mauvais itinéraire : reculez de 3 cases.', image: 'c2.svg', action: { type: 'go_back', steps: 3 } },
+    { id: 'ch3', text: 'Correspondance express : rendez-vous à Jean-Jaurès. Si vous passez par Départ, recevez 200 €.', image: 'c3.svg', action: { type: 'move_to', position: 39, collectSalary: true } },
+    { id: 'ch4', text: 'Soirée étudiante : allez au Nine. Si vous passez par Départ, recevez 200 €.', image: 'c4.svg', action: { type: 'move_to', position: 5, collectSalary: true } },
+    { id: 'ch5', text: 'Success Story : Magnaud vous verse un dividende de 110010 (50 €).', image: 'c5.svg', action: { type: 'receive', amount: 50 } },
+    { id: 'ch6', text: 'Contrôle Tisséo : fraude au métro Faculté de Pharmacie. Payez 15 €.', image: 'c6.svg', action: { type: 'pay', amount: 15 } },
   ]
   return shuffle(cards)
 }
 
 function buildCommunityDeck(): Card[] {
   const cards: Card[] = [
-    { id: 'cc1', text: 'Avancez jusqu\'à la Case Départ. Recevez 200 F.', action: { type: 'move_to', position: 0, collectSalary: true } },
-    { id: 'cc2', text: 'Erreur bancaire en votre faveur — recevez 200 F.', action: { type: 'receive', amount: 200 } },
-    { id: 'cc3', text: 'Payez 50 F de soins médicaux.', action: { type: 'pay', amount: 50 } },
-    { id: 'cc4', text: 'Recevez 50 F d\'honoraires de consultant.', action: { type: 'receive', amount: 50 } },
-    { id: 'cc5', text: 'Vous êtes libéré de prison. Conservez cette carte.', action: { type: 'get_out_of_jail' } },
-    { id: 'cc6', text: 'Allez en prison.', action: { type: 'go_to_jail' } },
-    { id: 'cc7', text: 'C\'est votre anniversaire — chaque joueur vous donne 10 F.', action: { type: 'receive_per_player', amount: 10 } },
-    { id: 'cc8', text: 'Remboursement d\'assurance-vie — recevez 100 F.', action: { type: 'receive', amount: 100 } },
-    { id: 'cc9', text: 'Payez 100 F d\'impôts scolaires.', action: { type: 'pay', amount: 100 } },
-    { id: 'cc10', text: 'Recevez 25 F pour services rendus.', action: { type: 'receive', amount: 25 } },
-    { id: 'cc11', text: 'Recevez 10 F de revenus de valeurs mobilières.', action: { type: 'receive', amount: 10 } },
-    { id: 'cc12', text: 'Payez 50 F d\'honoraires d\'hôpital.', action: { type: 'pay', amount: 50 } },
-    { id: 'cc13', text: 'Payez 150 F de frais de réparations : 40 F par maison et 115 F par hôtel.', action: { type: 'pay_per_building', houseAmount: 40, hotelAmount: 115 } },
-    { id: 'cc14', text: 'Vous avez gagné le deuxième prix de beauté — recevez 10 F.', action: { type: 'receive', amount: 10 } },
-    { id: 'cc15', text: 'Héritage — recevez 100 F.', action: { type: 'receive', amount: 100 } },
-    { id: 'cc16', text: 'Remboursement d\'impôts — recevez 20 F.', action: { type: 'receive', amount: 20 } },
+    { id: 'cc1', text: 'Erreur du CROUS en votre faveur. Recevez 200 €.', image: 'i1.svg', action: { type: 'receive', amount: 200 } },
+    { id: 'cc2', text: 'Vous avez revendu vos anciens cours de BUT Info. Recevez 50 €.', image: 'i2.svg', action: { type: 'receive', amount: 50 } },
+    { id: 'cc3', text: 'Remboursement partiel de votre CVEC. Recevez 100 €.', image: 'i3.svg', action: { type: 'receive', amount: 100 } },
+    { id: 'cc4', text: 'Vous avez mangé au RU toute la semaine. Recevez 25 €.', image: 'i4.svg', action: { type: 'receive', amount: 25 } },
+    { id: 'cc5', text: 'Frais d\'hospitalisation après une chute en VélôToulouse. Payez 100 €.', image: 'i5.svg', action: { type: 'pay', amount: 100 } },
+    { id: 'cc6', text: 'Vous avez un justificatif d\'absence valide. Libéré de TD.', image: 'i6.svg', action: { type: 'get_out_of_jail' } },
+    { id: 'cc7', text: 'Allez en TD. Ne passez pas par la case Départ.', image: 'i7.svg', action: { type: 'go_to_jail' } },
   ]
   return shuffle(cards)
 }
@@ -608,7 +589,7 @@ function applyCellEffect(state: GameState, playerId: string, position: number, d
 
     case 'chance': {
       const { state: s2, card } = drawCard(s, 'chance')
-      s = s2
+      s = { ...s2, lastCard: { deck: 'chance', text: card.text, image: card.image } }
       s = log(s, `${player.name} tire une carte Chance : "${card.text}"`, playerId)
       s = applyCardAction(s, playerId, card.action, diceTotal)
       if (card.action.type !== 'go_to_jail') s = nextPlayer(s)
@@ -617,8 +598,8 @@ function applyCellEffect(state: GameState, playerId: string, position: number, d
 
     case 'community': {
       const { state: s2, card } = drawCard(s, 'community')
-      s = s2
-      s = log(s, `${player.name} tire une carte Caisse de Communauté : "${card.text}"`, playerId)
+      s = { ...s2, lastCard: { deck: 'community', text: card.text, image: card.image } }
+      s = log(s, `${player.name} tire une carte IZLY : "${card.text}"`, playerId)
       s = applyCardAction(s, playerId, card.action, diceTotal)
       if (card.action.type !== 'go_to_jail') s = nextPlayer(s)
       break
@@ -1077,7 +1058,7 @@ export function useGetOutOfJailCard(
     ),
   }
   // Remettre la carte dans le tas
-  s = { ...s, deck: { ...s.deck, chance: [...s.deck.chance, { id: 'ch8', text: 'Vous êtes libéré de prison.', action: { type: 'get_out_of_jail' } as CardAction }] } }
+  s = { ...s, deck: { ...s.deck, chance: [...s.deck.chance, { id: 'ch8', text: 'Vous êtes libéré de prison.', image: 'c1.svg', action: { type: 'get_out_of_jail' } as CardAction }] } }
   s = log(s, `${player.name} utilise sa carte "Libéré de prison".`, playerId)
 
   return { success: true, state: s }

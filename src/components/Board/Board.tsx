@@ -40,6 +40,7 @@ interface BoardProps {
   properties: Property[];
   onCellClick?: (index: number) => void;
   selectedCell?: number | null;
+  currentPlayerId?: string;
 }
 
 // ─── Données des cases ────────────────────────────────────────────────────────
@@ -271,14 +272,14 @@ function HouseIndicator({
 
 // ─── Pions ────────────────────────────────────────────────────────────────────
 
-function PawnCluster({ pawns, cx, cy }: { pawns: Player[]; cx: number; cy: number }) {
+function PawnCluster({ pawns, cx, cy, currentPlayerId }: { pawns: Player[]; cx: number; cy: number; currentPlayerId?: string }) {
   const offsets = [
     { dx: 0,   dy: 0   },
-    { dx: -26, dy: -18 },
-    { dx: 26,  dy: -18 },
-    { dx: -26, dy: 18  },
-    { dx: 26,  dy: 18  },
-    { dx: 0,   dy: -36 },
+    { dx: -28, dy: -20 },
+    { dx: 28,  dy: -20 },
+    { dx: -28, dy: 20  },
+    { dx: 28,  dy: 20  },
+    { dx: 0,   dy: -40 },
   ];
 
   return (
@@ -288,19 +289,30 @@ function PawnCluster({ pawns, cx, cy }: { pawns: Player[]; cx: number; cy: numbe
         const px = cx + off.dx;
         const py = cy + off.dy;
         const color = PLAYER_COLORS[player.color];
+        const isActive = player.id === currentPlayerId;
+
         return (
           <g key={player.id}>
+            {/* Halo pour le joueur actif */}
+            {isActive && (
+              <circle cx={px} cy={py - 9} r="22" fill={color} opacity="0.25"
+                style={{ filter: `drop-shadow(0 0 8px ${color})` }}/>
+            )}
+            {/* Anneau extérieur blanc pour visibilité */}
+            <circle cx={px} cy={py - 9} r={isActive ? 17 : 15}
+              fill="none" stroke="white" strokeWidth={isActive ? 3 : 1.5} opacity={isActive ? 0.9 : 0.5}/>
             {/* Ombre portée */}
-            <ellipse cx={px} cy={py + 18} rx="16" ry="8" fill="black" opacity="0.35"/>
+            <ellipse cx={px} cy={py + 20} rx="17" ry="8" fill="black" opacity="0.5"/>
             {/* Corps */}
-            <ellipse cx={px} cy={py + 16} rx="15" ry="7" fill={color} opacity="0.6"/>
-            <rect x={px - 9} y={py} width="18" height="18" rx="3" fill={color}/>
+            <ellipse cx={px} cy={py + 17} rx="16" ry="7" fill={color} opacity="0.9"/>
+            <rect x={px - 10} y={py} width="20" height="19" rx="3" fill={color}/>
             {/* Tête */}
-            <circle cx={px} cy={py - 9} r="13" fill={color}/>
+            <circle cx={px} cy={py - 9} r={isActive ? 16 : 14} fill={color}/>
+            {/* Contour couleur vive */}
+            <circle cx={px} cy={py - 9} r={isActive ? 16 : 14}
+              fill="none" stroke={isActive ? 'white' : 'rgba(255,255,255,0.4)'} strokeWidth={isActive ? 2.5 : 1.5}/>
             {/* Reflet */}
-            <circle cx={px - 4} cy={py - 13} r="5" fill="white" opacity="0.35"/>
-            {/* Bordure sombre pour lisibilité */}
-            <circle cx={px} cy={py - 9} r="13" fill="none" stroke="rgba(0,0,0,0.3)" strokeWidth="1.5"/>
+            <circle cx={px - 5} cy={py - 15} r={isActive ? 6 : 5} fill="white" opacity={isActive ? 0.5 : 0.3}/>
           </g>
         );
       })}
@@ -310,7 +322,7 @@ function PawnCluster({ pawns, cx, cy }: { pawns: Player[]; cx: number; cy: numbe
 
 // ─── Composant principal ──────────────────────────────────────────────────────
 
-const Board: React.FC<BoardProps> = ({ players, properties, onCellClick, selectedCell }) => {
+const Board: React.FC<BoardProps> = ({ players, properties, onCellClick, selectedCell, currentPlayerId }) => {
   const [hoveredCell, setHoveredCell] = React.useState<number | null>(null);
 
   const propertyMap = new Map<number, Property>(
@@ -390,7 +402,7 @@ const Board: React.FC<BoardProps> = ({ players, properties, onCellClick, selecte
           const { cx, cy } = getCellRect(cell.index);
           const pawns = pawnsByPosition.get(cell.index) ?? [];
           if (pawns.length === 0) return null;
-          return <PawnCluster key={`pawns-${cell.index}`} pawns={pawns} cx={cx} cy={cy} />;
+          return <PawnCluster key={`pawns-${cell.index}`} pawns={pawns} cx={cx} cy={cy} currentPlayerId={currentPlayerId} />;
         })}
       </svg>
     </div>
