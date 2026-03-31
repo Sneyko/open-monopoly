@@ -8,42 +8,43 @@ import { useGame } from '../hooks/useGame'
 import { useSocket } from '../hooks/useSocket'
 import type { TradeOffer } from '../../shared/types'
 
+const COLOR_HEX: Record<string, string> = {
+  red: '#ef4444', blue: '#3b82f6', green: '#22c55e',
+  yellow: '#eab308', purple: '#a855f7', orange: '#f97316',
+}
+
 export default function GameView() {
   const {
     gameState, myPlayerId, isMyTurn,
     rollDice, buyProperty, declineProperty, endTurn,
     payJailFine, useGetOutOfJailCard, declareBankruptcy,
-    mortgageProperty, unmortgageProperty, buildHouse, sellHouse,
   } = useGame()
   const socket = useSocket()
-
   const [showTrade, setShowTrade] = useState(false)
-  const [selectedPropId, setSelectedPropId] = useState<number | null>(null)
 
   if (!gameState) return null
 
   const me = gameState.players.find(p => p.id === myPlayerId)
   const currentPlayer = gameState.players.find(p => p.id === gameState.currentPlayerId)
-  const myPosition = me?.position ?? 0
-  const cellAtMyPosition = gameState.properties.find(p => p.id === myPosition)
-  const canBuyCurrentCell = isMyTurn && cellAtMyPosition && !cellAtMyPosition.ownerId
-
-  // Dernière action possible : en prison
+  const cellAtMyPosition = gameState.properties.find(p => p.id === (me?.position ?? -1))
+  const canBuy = isMyTurn && !!cellAtMyPosition && !cellAtMyPosition.ownerId
   const meInJail = me?.inJail ?? false
+  // A déjà lancé les dés ce tour si lastDice existe et c'est mon tour
+  // (simplifié : on considère qu'il peut relancer si double)
+  const hasRolled = !isMyTurn || (gameState.lastDice != null && !canBuy)
 
   if (gameState.phase === 'ended') {
     const winner = gameState.players.find(p => !p.isBankrupt)
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="text-6xl mb-4">🏆</div>
-          <h1 className="text-4xl font-bold text-yellow-300 mb-2">
+      <div className="h-screen flex items-center justify-center bg-[#0f1117]">
+        <div className="text-center fade-in-up">
+          <div className="text-8xl mb-6">🏆</div>
+          <h1 className="text-5xl font-black text-yellow-300 mb-3">
             {winner?.name ?? 'Personne'} remporte la partie !
           </h1>
-          <button
-            onClick={() => window.location.reload()}
-            className="mt-6 bg-blue-600 hover:bg-blue-700 px-8 py-3 rounded-xl font-bold"
-          >
+          <p className="text-white/40 mb-8">Félicitations !</p>
+          <button onClick={() => window.location.reload()}
+            className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 px-10 py-4 rounded-2xl font-bold text-lg transition-all active:scale-95 shadow-xl">
             Rejouer
           </button>
         </div>
@@ -52,110 +53,129 @@ export default function GameView() {
   }
 
   return (
-    <div className="min-h-screen p-4 flex gap-4">
-      {/* Plateau */}
-      <div className="flex-shrink-0">
-        <Board
-          players={gameState.players.map(p => ({
-            id: p.id,
-            name: p.name,
-            color: p.color,
-            position: p.position,
-          }))}
-          properties={gameState.properties}
-          onCellClick={idx => setSelectedPropId(selectedPropId === idx ? null : idx)}
-        />
+    <div className="h-screen flex overflow-hidden bg-[#0f1117]">
+
+      {/* ── Plateau (dominant) ── */}
+      <div className="flex-1 flex items-center justify-center p-3 min-w-0">
+        <div style={{ width: 'min(calc(100vh - 1.5rem), calc(100vw - 320px))', aspectRatio: '1' }}>
+          <Board
+            players={gameState.players.map(p => ({
+              id: p.id, name: p.name, color: p.color, position: p.position,
+            }))}
+            properties={gameState.properties}
+          />
+        </div>
       </div>
 
-      {/* Panneau de droite */}
-      <div className="flex-1 flex flex-col gap-3 min-w-0 max-w-xs">
-        {/* Info tour */}
-        <div className="bg-gray-800 rounded-xl p-4">
-          <div className="text-sm text-gray-400">Tour {gameState.turn}</div>
-          <div className="font-bold text-lg">
-            {isMyTurn ? '⭐ Votre tour !' : `Tour de ${currentPlayer?.name ?? '…'}`}
+      {/* ── Sidebar droite ── */}
+      <div className="w-72 flex-shrink-0 flex flex-col gap-2 p-3 overflow-y-auto border-l border-white/6">
+
+        {/* Tour en cours */}
+        <div className={`rounded-xl p-3 border ${isMyTurn
+          ? 'bg-yellow-400/10 border-yellow-400/40'
+          : 'bg-white/4 border-white/8'}`}>
+          <div className="flex items-center gap-2">
+            {currentPlayer && (
+              <div className="w-3 h-3 rounded-full flex-shrink-0"
+                style={{ backgroundColor: COLOR_HEX[currentPlayer.color] ?? '#888' }} />
+            )}
+            <div className="min-w-0">
+              <div className="text-xs text-white/40 leading-none mb-0.5">Tour {gameState.turn}</div>
+              <div className="font-bold text-sm text-white truncate">
+                {isMyTurn ? '⭐ Votre tour !' : `${currentPlayer?.name ?? '…'} joue`}
+              </div>
+            </div>
           </div>
           {gameState.doublesCount > 0 && (
-            <div className="text-yellow-400 text-sm">Double × {gameState.doublesCount} !</div>
+            <div className="mt-1.5 text-xs text-yellow-400 font-semibold">
+              🎯 Double × {gameState.doublesCount} — rejoue !
+            </div>
           )}
         </div>
 
-        {/* Dés */}
-        {gameState.lastDice && (
-          <div className="bg-gray-800 rounded-xl p-3">
-            <Dice values={gameState.lastDice} />
-          </div>
-        )}
+        {/* Dés + actions principales */}
+        <div className="bg-white/4 border border-white/8 rounded-xl p-4">
+          <Dice
+            values={gameState.lastDice ?? null}
+            onRoll={rollDice}
+            isMyTurn={isMyTurn && !me?.isBankrupt}
+            hasRolled={hasRolled}
+          />
 
-        {/* Actions */}
-        {isMyTurn && !me?.isBankrupt && (
-          <div className="bg-gray-800 rounded-xl p-4 space-y-2">
-            <div className="text-sm text-gray-400 font-semibold mb-1">Actions</div>
-
-            {/* Prison */}
-            {meInJail && (
-              <>
-                <button onClick={payJailFine}
-                  className="w-full bg-orange-600 hover:bg-orange-700 py-2 rounded-lg text-sm font-semibold">
-                  Payer {50} F (sortir de prison)
+          {/* Prison */}
+          {isMyTurn && meInJail && (
+            <div className="mt-3 space-y-2">
+              <div className="text-xs text-orange-300 text-center font-medium">🔒 Vous êtes en prison</div>
+              <button onClick={payJailFine}
+                className="w-full bg-orange-500/20 hover:bg-orange-500/30 border border-orange-500/40 text-orange-300 py-2 rounded-lg text-sm font-semibold transition-all">
+                Payer 50 F et sortir
+              </button>
+              {(me?.getOutOfJailCards ?? 0) > 0 && (
+                <button onClick={useGetOutOfJailCard}
+                  className="w-full bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/40 text-blue-300 py-2 rounded-lg text-sm font-semibold transition-all">
+                  🃏 Utiliser la carte
                 </button>
-                {(me?.getOutOfJailCards ?? 0) > 0 && (
-                  <button onClick={useGetOutOfJailCard}
-                    className="w-full bg-blue-600 hover:bg-blue-700 py-2 rounded-lg text-sm font-semibold">
-                    Utiliser carte sortie de prison
-                  </button>
-                )}
-              </>
-            )}
+              )}
+            </div>
+          )}
 
-            <button onClick={rollDice}
-              className="w-full bg-green-600 hover:bg-green-700 py-2 rounded-lg font-semibold">
-              🎲 Lancer les dés
-            </button>
+          {/* Achat propriété */}
+          {canBuy && (
+            <div className="mt-3 space-y-2">
+              <div className="text-xs text-center text-white/50">
+                Case {me?.position} disponible à l'achat
+              </div>
+              <button onClick={buyProperty}
+                className="w-full bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-400 hover:to-amber-400 text-black font-bold py-2.5 rounded-xl transition-all active:scale-95 shadow-md">
+                💰 Acheter
+              </button>
+              <button onClick={declineProperty}
+                className="w-full bg-white/6 hover:bg-white/10 border border-white/10 text-white/60 py-2 rounded-xl text-sm transition-all">
+                Enchères
+              </button>
+            </div>
+          )}
 
-            {canBuyCurrentCell && (
-              <>
-                <button onClick={buyProperty}
-                  className="w-full bg-yellow-500 hover:bg-yellow-600 py-2 rounded-lg font-semibold text-black">
-                  💰 Acheter la propriété
-                </button>
-                <button onClick={declineProperty}
-                  className="w-full bg-gray-600 hover:bg-gray-700 py-2 rounded-lg text-sm">
-                  Passer aux enchères
-                </button>
-              </>
-            )}
+          {/* Fin de tour */}
+          {isMyTurn && !me?.isBankrupt && (
+            <div className="mt-3 space-y-1.5">
+              <button onClick={() => setShowTrade(true)}
+                className="w-full bg-purple-500/15 hover:bg-purple-500/25 border border-purple-500/30 text-purple-300 py-2 rounded-xl text-sm font-medium transition-all">
+                🤝 Proposer un échange
+              </button>
+              <button onClick={endTurn}
+                className="w-full bg-white/6 hover:bg-white/10 border border-white/10 text-white/70 py-2 rounded-xl text-sm transition-all">
+                Fin du tour →
+              </button>
+              <button onClick={declareBankruptcy}
+                className="w-full text-red-900/60 hover:text-red-400 py-1 rounded text-xs transition-colors">
+                Déclarer faillite
+              </button>
+            </div>
+          )}
+        </div>
 
-            <button onClick={() => setShowTrade(true)}
-              className="w-full bg-purple-600 hover:bg-purple-700 py-2 rounded-lg text-sm">
-              🤝 Échange
-            </button>
-
-            <button onClick={endTurn}
-              className="w-full bg-gray-600 hover:bg-gray-700 py-2 rounded-lg text-sm">
-              Fin du tour
-            </button>
-
-            <button onClick={declareBankruptcy}
-              className="w-full bg-red-800 hover:bg-red-900 py-1 rounded text-xs text-gray-400">
-              Déclarer faillite
-            </button>
-          </div>
-        )}
-
-        {/* Réception d'échange */}
+        {/* Offre d'échange en attente */}
         {gameState.pendingTrade?.toPlayerId === myPlayerId && !showTrade && (
-          <div className="bg-purple-900/50 border border-purple-500 rounded-xl p-3">
-            <div className="text-sm font-semibold mb-2">Offre d'échange reçue !</div>
-            <button onClick={() => setShowTrade(true)}
-              className="w-full bg-purple-600 hover:bg-purple-700 py-2 rounded text-sm">
-              Voir l'offre
-            </button>
+          <button onClick={() => setShowTrade(true)}
+            className="bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/50 rounded-xl p-3 text-left transition-all fade-in-up">
+            <div className="text-xs font-bold text-purple-300 mb-0.5">🤝 Offre reçue !</div>
+            <div className="text-xs text-white/50">Cliquez pour voir l'échange proposé</div>
+          </button>
+        )}
+
+        {/* Parc gratuit */}
+        {gameState.freeParkingPot > 0 && (
+          <div className="bg-white/4 border border-white/8 rounded-xl px-3 py-2 flex items-center justify-between">
+            <span className="text-xs text-white/40">🅿️ Parc Gratuit</span>
+            <span className="text-sm font-bold text-yellow-400">
+              {gameState.freeParkingPot.toLocaleString()} F
+            </span>
           </div>
         )}
 
         {/* Joueurs */}
-        <div className="space-y-2 flex-1 overflow-y-auto">
+        <div className="space-y-1.5">
           {gameState.players.map(player => (
             <PlayerCard
               key={player.id}
@@ -167,13 +187,10 @@ export default function GameView() {
           ))}
         </div>
 
-        {/* Infos financières */}
-        <div className="bg-gray-800 rounded-xl p-3 text-xs text-gray-400">
-          <div>Parc Gratuit : <span className="text-yellow-300 font-bold">{gameState.freeParkingPot} F</span></div>
-        </div>
-
         {/* Journal */}
-        <GameLog events={gameState.log} />
+        <div className="flex-1 min-h-0 bg-white/3 border border-white/6 rounded-xl p-3" style={{ minHeight: '160px', maxHeight: '220px' }}>
+          <GameLog events={gameState.log} />
+        </div>
       </div>
 
       {/* Modale d'échange */}

@@ -673,12 +673,13 @@ const Board: React.FC<BoardProps> = ({ players, properties, onCellClick }) => {
       viewBox={`0 0 ${S} ${S}`}
       width="100%"
       style={{
-        maxWidth: "780px",
+        width: "100%",
+        height: "100%",
         display: "block",
         border: "3px solid #2C2C2A",
-        borderRadius: "4px",
+        borderRadius: "8px",
         background: "#FAFAF8",
-        boxShadow: "0 8px 40px rgba(0,0,0,0.18)",
+        boxShadow: "0 12px 60px rgba(0,0,0,0.5)",
       }}
       aria-label="Monopoly board"
     >

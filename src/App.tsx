@@ -20,25 +20,18 @@ export default function App() {
   useEffect(() => {
     function onConnect() { setConnected(true) }
     function onDisconnect() { setConnected(false) }
-
-    function onRoomCreated() {
-      setScreen('waiting')
-    }
-
+    function onRoomCreated() { setScreen('waiting') }
     function onRoomUpdated(data: { room: typeof room }) {
       setRoom(data.room!)
       setScreen('waiting')
     }
-
     function onGameStarted(data: { gameState: NonNullable<typeof gameState> }) {
       setGameState(data.gameState)
       setScreen('playing')
     }
-
     function onStateUpdate(data: { gameState: NonNullable<typeof gameState> }) {
       setGameState(data.gameState)
     }
-
     function onError({ message }: { message: string }) {
       setError(message)
       setTimeout(() => setError(''), 4000)
@@ -63,7 +56,6 @@ export default function App() {
     }
   }, [socket, setRoom, setGameState])
 
-  // Résoudre le playerId dès que la room est disponible
   useEffect(() => {
     if (room && myName && !myPlayerId) {
       const me = room.players.find(p => p.name === myName && p.color === myColor)
@@ -77,64 +69,65 @@ export default function App() {
 
   if (screen === 'waiting' && room) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4">
+      <div className="h-screen flex items-center justify-center p-4 bg-[#0f1117]">
         <WaitingRoom room={room} myPlayerId={myPlayerId} />
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <h1 className="text-5xl font-extrabold text-white mb-1">🎩 Monopoly</h1>
-          <p className="text-gray-400 text-sm">Open-source • Multijoueur • En ligne</p>
-          <div className={`mt-2 text-xs inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full ${connected ? 'text-green-400' : 'text-red-400'}`}>
-            <span className={`w-1.5 h-1.5 rounded-full ${connected ? 'bg-green-400' : 'bg-red-400'}`} />
-            {connected ? 'Connecté au serveur' : 'Connexion au serveur…'}
+    <div className="h-screen flex items-center justify-center p-4 bg-[#0f1117]">
+      <div className="w-full max-w-sm">
+
+        {/* Logo */}
+        <div className="text-center mb-10">
+          <div className="text-7xl mb-3 select-none">🎩</div>
+          <h1 className="text-4xl font-black tracking-tight text-white mb-1">
+            Free Monopoly
+          </h1>
+          <p className="text-white/30 text-sm">Open-source · Multijoueur · En ligne</p>
+          <div className={`mt-3 text-xs inline-flex items-center gap-1.5 px-3 py-1 rounded-full border
+            ${connected
+              ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400'
+              : 'border-red-500/30 bg-red-500/10 text-red-400'
+            }`}>
+            <span className={`w-1.5 h-1.5 rounded-full ${connected ? 'bg-emerald-400' : 'bg-red-400'}`} />
+            {connected ? 'Serveur connecté' : 'Connexion en cours…'}
           </div>
         </div>
 
         {error && (
-          <div className="bg-red-900/80 border border-red-500 rounded-lg px-4 py-3 mb-4 text-red-200 text-sm text-center">
+          <div className="bg-red-500/15 border border-red-500/30 rounded-xl px-4 py-3 mb-4 text-red-300 text-sm text-center fade-in-up">
             {error}
           </div>
         )}
 
         {screen === 'home' && (
-          <div className="space-y-4">
+          <div className="space-y-3 fade-in-up">
             <button
               onClick={() => setScreen('create')}
               disabled={!connected}
-              className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-40 py-4 rounded-xl font-bold text-xl transition-colors"
+              className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 disabled:opacity-30 py-4 rounded-2xl font-bold text-lg transition-all active:scale-98 shadow-lg shadow-blue-600/20"
             >
               Créer une partie
             </button>
             <button
               onClick={() => setScreen('join')}
               disabled={!connected}
-              className="w-full bg-gray-700 hover:bg-gray-600 disabled:opacity-40 py-4 rounded-xl font-bold text-xl transition-colors"
+              className="w-full bg-white/8 hover:bg-white/12 disabled:opacity-30 border border-white/10 py-4 rounded-2xl font-bold text-lg transition-all active:scale-98"
             >
               Rejoindre une partie
             </button>
           </div>
         )}
 
-        {screen === 'create' && (
-          <div className="bg-gray-800 rounded-2xl p-6">
-            <button onClick={() => setScreen('home')} className="text-gray-400 hover:text-white text-sm mb-4 block">
+        {(screen === 'create' || screen === 'join') && (
+          <div className="bg-white/5 border border-white/10 rounded-2xl p-6 fade-in-up">
+            <button onClick={() => setScreen('home')}
+              className="flex items-center gap-1.5 text-white/40 hover:text-white/70 text-sm mb-5 transition-colors">
               ← Retour
             </button>
-            <CreateRoom />
-          </div>
-        )}
-
-        {screen === 'join' && (
-          <div className="bg-gray-800 rounded-2xl p-6">
-            <button onClick={() => setScreen('home')} className="text-gray-400 hover:text-white text-sm mb-4 block">
-              ← Retour
-            </button>
-            <JoinRoom />
+            {screen === 'create' ? <CreateRoom /> : <JoinRoom />}
           </div>
         )}
       </div>
