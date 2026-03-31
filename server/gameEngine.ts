@@ -1,0 +1,1105 @@
+/**
+ * gameEngine.ts — Moteur de jeu Monopoly
+ * Respecte RULES.md comme source de vérité.
+ * Toutes les actions retournent { success, state, events } sans muter l'état en entrée.
+ */
+
+import type { GameState, Player, Property, Card, CardAction, GameEvent, TradeOffer } from '../shared/types'
+import type { RoomPlayer } from './types'
+import { nanoid } from 'nanoid'
+
+// ─── Données des propriétés ───────────────────────────────────────────────────
+
+interface CellDef {
+  index: number
+  name: string
+  type: 'property' | 'railroad' | 'utility' | 'tax' | 'chance' | 'community' | 'go' | 'jail' | 'free-parking' | 'go-to-jail'
+  colorGroup?: string
+  price?: number
+  rents?: number[]      // [base, 1h, 2h, 3h, 4h, hotel]
+  rentRailroad?: number // base rent (×nb gares possédées)
+  mortgage?: number
+  houseCost?: number
+  hotelCost?: number
+  tax?: number
+}
+
+const CELLS: CellDef[] = [
+  { index: 0,  name: 'Départ',              type: 'go' },
+  { index: 1,  name: 'Méditerranée',        type: 'property', colorGroup: 'brown',      price: 60,  rents: [2,10,30,90,160,250],    mortgage: 30,  houseCost: 50,  hotelCost: 50 },
+  { index: 2,  name: 'Caisse de Communauté',type: 'community' },
+  { index: 3,  name: 'Boulevard de Belleville', type: 'property', colorGroup: 'brown',  price: 60,  rents: [4,20,60,180,320,450],   mortgage: 30,  houseCost: 50,  hotelCost: 50 },
+  { index: 4,  name: 'Impôt sur le revenu', type: 'tax', tax: 200 },
+  { index: 5,  name: 'Gare Montparnasse',   type: 'railroad', price: 200, rents: [25,50,100,200], mortgage: 100 },
+  { index: 6,  name: 'Rue de Vaugirard',    type: 'property', colorGroup: 'light-blue', price: 100, rents: [6,30,90,270,400,550],   mortgage: 50,  houseCost: 50,  hotelCost: 50 },
+  { index: 7,  name: 'Chance',              type: 'chance' },
+  { index: 8,  name: 'Rue de Courcelles',   type: 'property', colorGroup: 'light-blue', price: 100, rents: [6,30,90,270,400,550],   mortgage: 50,  houseCost: 50,  hotelCost: 50 },
+  { index: 9,  name: 'Avenue de la République', type: 'property', colorGroup: 'light-blue', price: 120, rents: [8,40,100,300,450,600], mortgage: 60, houseCost: 50, hotelCost: 50 },
+  { index: 10, name: 'Prison / Simple visite', type: 'jail' },
+  { index: 11, name: 'Boulevard de la Villette', type: 'property', colorGroup: 'pink',  price: 140, rents: [10,50,150,450,625,750],  mortgage: 70,  houseCost: 100, hotelCost: 100 },
+  { index: 12, name: 'Compagnie de Distribution Électrique', type: 'utility', price: 150, mortgage: 75 },
+  { index: 13, name: 'Avenue de Neuilly',   type: 'property', colorGroup: 'pink',        price: 140, rents: [10,50,150,450,625,750],  mortgage: 70,  houseCost: 100, hotelCost: 100 },
+  { index: 14, name: 'Rue de Paradis',      type: 'property', colorGroup: 'pink',        price: 160, rents: [12,60,180,500,700,900],  mortgage: 80,  houseCost: 100, hotelCost: 100 },
+  { index: 15, name: 'Gare de Lyon',        type: 'railroad', price: 200, rents: [25,50,100,200], mortgage: 100 },
+  { index: 16, name: 'Avenue Mozart',       type: 'property', colorGroup: 'orange',      price: 180, rents: [14,70,200,550,750,950],  mortgage: 90,  houseCost: 100, hotelCost: 100 },
+  { index: 17, name: 'Caisse de Communauté',type: 'community' },
+  { index: 18, name: 'Boulevard Saint-Michel', type: 'property', colorGroup: 'orange',  price: 180, rents: [14,70,200,550,750,950],  mortgage: 90,  houseCost: 100, hotelCost: 100 },
+  { index: 19, name: 'Place Pigalle',       type: 'property', colorGroup: 'orange',      price: 200, rents: [16,80,220,600,800,1000], mortgage: 100, houseCost: 100, hotelCost: 100 },
+  { index: 20, name: 'Parc Gratuit',        type: 'free-parking' },
+  { index: 21, name: 'Avenue Matignon',     type: 'property', colorGroup: 'red',         price: 220, rents: [18,90,250,700,875,1050], mortgage: 110, houseCost: 150, hotelCost: 150 },
+  { index: 22, name: 'Chance',              type: 'chance' },
+  { index: 23, name: 'Boulevard Malesherbes', type: 'property', colorGroup: 'red',       price: 220, rents: [18,90,250,700,875,1050], mortgage: 110, houseCost: 150, hotelCost: 150 },
+  { index: 24, name: 'Avenue Henri-Martin', type: 'property', colorGroup: 'red',         price: 240, rents: [20,100,300,750,925,1100],mortgage: 120, houseCost: 150, hotelCost: 150 },
+  { index: 25, name: 'Gare du Nord',        type: 'railroad', price: 200, rents: [25,50,100,200], mortgage: 100 },
+  { index: 26, name: 'Faubourg Saint-Honoré', type: 'property', colorGroup: 'yellow',   price: 260, rents: [22,110,330,800,975,1150], mortgage: 130, houseCost: 150, hotelCost: 150 },
+  { index: 27, name: 'Place de la Bourse',  type: 'property', colorGroup: 'yellow',      price: 260, rents: [22,110,330,800,975,1150], mortgage: 130, houseCost: 150, hotelCost: 150 },
+  { index: 28, name: 'Compagnie des Eaux',  type: 'utility', price: 150, mortgage: 75 },
+  { index: 29, name: 'Rue La Fayette',      type: 'property', colorGroup: 'yellow',      price: 280, rents: [24,120,360,850,1025,1200],mortgage: 140, houseCost: 150, hotelCost: 150 },
+  { index: 30, name: 'Allez en Prison',     type: 'go-to-jail' },
+  { index: 31, name: 'Avenue de Breteuil',  type: 'property', colorGroup: 'green',       price: 300, rents: [26,130,390,900,1100,1275],mortgage: 150, houseCost: 200, hotelCost: 200 },
+  { index: 32, name: 'Avenue Foch',         type: 'property', colorGroup: 'green',       price: 300, rents: [26,130,390,900,1100,1275],mortgage: 150, houseCost: 200, hotelCost: 200 },
+  { index: 33, name: 'Caisse de Communauté',type: 'community' },
+  { index: 34, name: 'Boulevard des Capucines', type: 'property', colorGroup: 'green',  price: 320, rents: [28,150,450,1000,1200,1400],mortgage: 160, houseCost: 200, hotelCost: 200 },
+  { index: 35, name: 'Gare Saint-Lazare',   type: 'railroad', price: 200, rents: [25,50,100,200], mortgage: 100 },
+  { index: 36, name: 'Chance',              type: 'chance' },
+  { index: 37, name: 'Avenue des Champs-Élysées', type: 'property', colorGroup: 'dark-blue', price: 350, rents: [35,175,500,1100,1300,1500], mortgage: 175, houseCost: 200, hotelCost: 200 },
+  { index: 38, name: 'Taxe de Luxe',        type: 'tax', tax: 100 },
+  { index: 39, name: 'Rue de la Paix',      type: 'property', colorGroup: 'dark-blue',  price: 400, rents: [50,200,600,1400,1700,2000], mortgage: 200, houseCost: 200, hotelCost: 200 },
+]
+
+const SALARY = 20000        // 20 000 F en passant par GO
+const STARTING_MONEY = 1500 // en centaines de francs → simplifié à 1500 pour l'interface
+const JAIL_FINE = 50
+const JAIL_POSITION = 10
+const GO_TO_JAIL_POSITION = 30
+const MORTGAGE_INTEREST = 0.1
+
+// ─── Cartes Chance & Communauté ───────────────────────────────────────────────
+
+function buildChanceDeck(): Card[] {
+  const cards: Card[] = [
+    { id: 'ch1', text: 'Avancez jusqu\'à la Case Départ. Recevez 200 F.', action: { type: 'move_to', position: 0, collectSalary: true } },
+    { id: 'ch2', text: 'Avancez jusqu\'à la Rue de la Paix.', action: { type: 'move_to', position: 39, collectSalary: true } },
+    { id: 'ch3', text: 'Avancez jusqu\'aux Champs-Élysées.', action: { type: 'move_to', position: 37, collectSalary: true } },
+    { id: 'ch4', text: 'Avancez jusqu\'à la prochaine gare.', action: { type: 'move_to_nearest', cellType: 'railroad' } },
+    { id: 'ch5', text: 'Avancez jusqu\'à la prochaine gare.', action: { type: 'move_to_nearest', cellType: 'railroad' } },
+    { id: 'ch6', text: 'Avancez jusqu\'à la prochaine compagnie.', action: { type: 'move_to_nearest', cellType: 'utility' } },
+    { id: 'ch7', text: 'La banque vous verse 50 F.', action: { type: 'receive', amount: 50 } },
+    { id: 'ch8', text: 'Vous êtes libéré de prison. Conservez cette carte.', action: { type: 'get_out_of_jail' } },
+    { id: 'ch9', text: 'Reculez de 3 cases.', action: { type: 'go_back', steps: 3 } },
+    { id: 'ch10', text: 'Allez en prison.', action: { type: 'go_to_jail' } },
+    { id: 'ch11', text: 'Payez 25 F pour chaque maison et 100 F pour chaque hôtel.', action: { type: 'pay_per_building', houseAmount: 25, hotelAmount: 100 } },
+    { id: 'ch12', text: 'Payez 15 F d\'amende.', action: { type: 'pay', amount: 15 } },
+    { id: 'ch13', text: 'Avancez jusqu\'à la Gare Montparnasse.', action: { type: 'move_to', position: 5, collectSalary: true } },
+    { id: 'ch14', text: 'Avancez jusqu\'à la Place Pigalle.', action: { type: 'move_to', position: 19, collectSalary: true } },
+    { id: 'ch15', text: 'Recevez 150 F en dividendes.', action: { type: 'receive', amount: 150 } },
+    { id: 'ch16', text: 'Remboursement d\'impôts — recevez 100 F.', action: { type: 'receive', amount: 100 } },
+  ]
+  return shuffle(cards)
+}
+
+function buildCommunityDeck(): Card[] {
+  const cards: Card[] = [
+    { id: 'cc1', text: 'Avancez jusqu\'à la Case Départ. Recevez 200 F.', action: { type: 'move_to', position: 0, collectSalary: true } },
+    { id: 'cc2', text: 'Erreur bancaire en votre faveur — recevez 200 F.', action: { type: 'receive', amount: 200 } },
+    { id: 'cc3', text: 'Payez 50 F de soins médicaux.', action: { type: 'pay', amount: 50 } },
+    { id: 'cc4', text: 'Recevez 50 F d\'honoraires de consultant.', action: { type: 'receive', amount: 50 } },
+    { id: 'cc5', text: 'Vous êtes libéré de prison. Conservez cette carte.', action: { type: 'get_out_of_jail' } },
+    { id: 'cc6', text: 'Allez en prison.', action: { type: 'go_to_jail' } },
+    { id: 'cc7', text: 'C\'est votre anniversaire — chaque joueur vous donne 10 F.', action: { type: 'receive_per_player', amount: 10 } },
+    { id: 'cc8', text: 'Remboursement d\'assurance-vie — recevez 100 F.', action: { type: 'receive', amount: 100 } },
+    { id: 'cc9', text: 'Payez 100 F d\'impôts scolaires.', action: { type: 'pay', amount: 100 } },
+    { id: 'cc10', text: 'Recevez 25 F pour services rendus.', action: { type: 'receive', amount: 25 } },
+    { id: 'cc11', text: 'Recevez 10 F de revenus de valeurs mobilières.', action: { type: 'receive', amount: 10 } },
+    { id: 'cc12', text: 'Payez 50 F d\'honoraires d\'hôpital.', action: { type: 'pay', amount: 50 } },
+    { id: 'cc13', text: 'Payez 150 F de frais de réparations : 40 F par maison et 115 F par hôtel.', action: { type: 'pay_per_building', houseAmount: 40, hotelAmount: 115 } },
+    { id: 'cc14', text: 'Vous avez gagné le deuxième prix de beauté — recevez 10 F.', action: { type: 'receive', amount: 10 } },
+    { id: 'cc15', text: 'Héritage — recevez 100 F.', action: { type: 'receive', amount: 100 } },
+    { id: 'cc16', text: 'Remboursement d\'impôts — recevez 20 F.', action: { type: 'receive', amount: 20 } },
+  ]
+  return shuffle(cards)
+}
+
+// ─── Utilitaires ──────────────────────────────────────────────────────────────
+
+function shuffle<T>(arr: T[]): T[] {
+  const a = [...arr]
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[a[i], a[j]] = [a[j], a[i]]
+  }
+  return a
+}
+
+function rollDie(): number {
+  return Math.floor(Math.random() * 6) + 1
+}
+
+function log(state: GameState, message: string, playerId?: string): GameState {
+  const event: GameEvent = {
+    id: nanoid(),
+    timestamp: Date.now(),
+    message,
+    playerId,
+  }
+  return { ...state, log: [...state.log, event] }
+}
+
+function getCellDef(index: number): CellDef {
+  return CELLS[index]
+}
+
+function getGroupCells(colorGroup: string): CellDef[] {
+  return CELLS.filter(c => c.colorGroup === colorGroup && c.type === 'property')
+}
+
+function getRailroads(): CellDef[] {
+  return CELLS.filter(c => c.type === 'railroad')
+}
+
+function getUtilities(): CellDef[] {
+  return CELLS.filter(c => c.type === 'utility')
+}
+
+function ownsFullGroup(state: GameState, playerId: string, colorGroup: string): boolean {
+  const group = getGroupCells(colorGroup)
+  return group.every(c => {
+    const prop = state.properties.find(p => p.id === c.index)
+    return prop?.ownerId === playerId
+  })
+}
+
+function countOwnedRailroads(state: GameState, playerId: string): number {
+  return getRailroads().filter(c => {
+    const prop = state.properties.find(p => p.id === c.index)
+    return prop?.ownerId === playerId
+  }).length
+}
+
+function countOwnedUtilities(state: GameState, playerId: string): number {
+  return getUtilities().filter(c => {
+    const prop = state.properties.find(p => p.id === c.index)
+    return prop?.ownerId === playerId
+  }).length
+}
+
+function calculateRent(state: GameState, landingPlayerId: string, propertyIndex: number, diceTotal?: number): number {
+  const cell = getCellDef(propertyIndex)
+  const prop = state.properties.find(p => p.id === propertyIndex)
+  if (!prop || !prop.ownerId || prop.mortgaged) return 0
+  if (prop.ownerId === landingPlayerId) return 0
+
+  const ownerId = prop.ownerId
+
+  if (cell.type === 'railroad') {
+    const owned = countOwnedRailroads(state, ownerId)
+    const baseRents = cell.rents ?? [25, 50, 100, 200]
+    return baseRents[owned - 1] ?? 25
+  }
+
+  if (cell.type === 'utility') {
+    const owned = countOwnedUtilities(state, ownerId)
+    const multiplier = owned === 2 ? 10 : 4
+    return (diceTotal ?? 7) * multiplier
+  }
+
+  if (cell.type === 'property' && cell.colorGroup && cell.rents) {
+    if (prop.hotel) return cell.rents[5]
+    if (prop.houses > 0) return cell.rents[prop.houses]
+    // Terrain nu — double loyer si monopole complet
+    if (ownsFullGroup(state, ownerId, cell.colorGroup)) {
+      return cell.rents[0] * 2
+    }
+    return cell.rents[0]
+  }
+
+  return 0
+}
+
+function transferMoney(
+  state: GameState,
+  fromId: string | 'bank',
+  toId: string | 'bank',
+  amount: number,
+): GameState {
+  if (amount <= 0) return state
+  let players = state.players.map(p => ({ ...p }))
+
+  if (fromId !== 'bank') {
+    players = players.map(p => p.id === fromId ? { ...p, money: p.money - amount } : p)
+  }
+  if (toId !== 'bank') {
+    players = players.map(p => p.id === toId ? { ...p, money: p.money + amount } : p)
+  }
+  if (toId === 'free-parking') {
+    return { ...state, players, freeParkingPot: state.freeParkingPot + amount }
+  }
+
+  return { ...state, players }
+}
+
+function movePlayer(
+  state: GameState,
+  playerId: string,
+  newPosition: number,
+  passedGo: boolean,
+): GameState {
+  let s = {
+    ...state,
+    players: state.players.map(p =>
+      p.id === playerId ? { ...p, position: newPosition } : p
+    ),
+  }
+  if (passedGo) {
+    s = transferMoney(s, 'bank', playerId, SALARY)
+    s = log(s, `${s.players.find(p => p.id === playerId)?.name} passe par la case Départ et reçoit ${SALARY} F.`, playerId)
+  }
+  return s
+}
+
+function goToJail(state: GameState, playerId: string): GameState {
+  let s = {
+    ...state,
+    players: state.players.map(p =>
+      p.id === playerId ? { ...p, position: JAIL_POSITION, inJail: true, jailTurns: 0 } : p
+    ),
+    doublesCount: 0,
+  }
+  const player = s.players.find(p => p.id === playerId)!
+  s = log(s, `${player.name} est envoyé en prison !`, playerId)
+  return s
+}
+
+function nextPlayer(state: GameState): GameState {
+  const activePlayers = state.players.filter(p => !p.isBankrupt)
+  if (activePlayers.length === 0) return state
+  const currentIndex = activePlayers.findIndex(p => p.id === state.currentPlayerId)
+  const nextIndex = (currentIndex + 1) % activePlayers.length
+  return {
+    ...state,
+    currentPlayerId: activePlayers[nextIndex].id,
+    doublesCount: 0,
+    turn: state.turn + 1,
+  }
+}
+
+function drawCard(state: GameState, deck: 'chance' | 'community'): { state: GameState; card: Card } {
+  const deckCards = deck === 'chance' ? [...state.deck.chance] : [...state.deck.community]
+  const card = deckCards.shift()!
+
+  // Remettre la carte en bas sauf si c'est une carte sortie de prison
+  if (card.action.type !== 'get_out_of_jail') {
+    deckCards.push(card)
+  }
+
+  const newDeck = deck === 'chance'
+    ? { ...state.deck, chance: deckCards }
+    : { ...state.deck, community: deckCards }
+
+  return { state: { ...state, deck: newDeck }, card }
+}
+
+function applyCardAction(
+  state: GameState,
+  playerId: string,
+  action: CardAction,
+  diceTotal: number,
+): GameState {
+  const player = state.players.find(p => p.id === playerId)!
+
+  switch (action.type) {
+    case 'move_to': {
+      const passed = action.collectSalary && action.position <= player.position && action.position !== player.position
+      return movePlayer(state, playerId, action.position, passed)
+    }
+    case 'go_back': {
+      const newPos = (player.position - action.steps + 40) % 40
+      return movePlayer(state, playerId, newPos, false)
+    }
+    case 'move_to_nearest': {
+      const targets = action.cellType === 'railroad'
+        ? [5, 15, 25, 35]
+        : [12, 28]
+      let nearest = targets[0]
+      let minDist = 40
+      for (const t of targets) {
+        const dist = (t - player.position + 40) % 40
+        if (dist < minDist) { minDist = dist; nearest = t }
+      }
+      const passed = nearest < player.position
+      return movePlayer(state, playerId, nearest, passed)
+    }
+    case 'pay': {
+      return transferMoney(state, playerId, 'free-parking', action.amount)
+    }
+    case 'receive': {
+      return transferMoney(state, 'bank', playerId, action.amount)
+    }
+    case 'pay_per_building': {
+      let total = 0
+      for (const prop of state.properties) {
+        if (prop.ownerId === playerId) {
+          if (prop.hotel) total += action.hotelAmount
+          else total += prop.houses * action.houseAmount
+        }
+      }
+      return transferMoney(state, playerId, 'free-parking', total)
+    }
+    case 'receive_per_player': {
+      let s = state
+      const otherPlayers = state.players.filter(p => p.id !== playerId && !p.isBankrupt)
+      for (const other of otherPlayers) {
+        s = transferMoney(s, other.id, playerId, action.amount)
+      }
+      return s
+    }
+    case 'go_to_jail': {
+      return goToJail(state, playerId)
+    }
+    case 'get_out_of_jail': {
+      return {
+        ...state,
+        players: state.players.map(p =>
+          p.id === playerId ? { ...p, getOutOfJailCards: p.getOutOfJailCards + 1 } : p
+        ),
+      }
+    }
+    default:
+      return state
+  }
+}
+
+function checkBankruptcy(state: GameState, playerId: string): GameState {
+  const player = state.players.find(p => p.id === playerId)
+  if (!player || player.money >= 0) return state
+
+  // Vérifier si le joueur peut lever des hypothèques / vendre des maisons
+  const canSell = state.properties.some(p =>
+    p.ownerId === playerId && (p.houses > 0 || p.hotel)
+  )
+  if (canSell) return state // Le joueur doit vendre manuellement
+
+  // Faillite automatique si impossible de récupérer de l'argent
+  const hasAssets = state.properties.some(p => p.ownerId === playerId && !p.mortgaged)
+  if (hasAssets) return state // Laisser le joueur gérer
+
+  return declareBankruptcy(state, playerId, 'bank')
+}
+
+function declareBankruptcy(state: GameState, playerId: string, creditorId: string | 'bank'): GameState {
+  const player = state.players.find(p => p.id === playerId)!
+  let s: GameState = {
+    ...state,
+    players: state.players.map(p =>
+      p.id === playerId ? { ...p, isBankrupt: true, money: 0 } : p
+    ),
+  }
+
+  // Transférer propriétés au créancier ou à la banque pour enchères
+  const playerProps = s.properties.filter(p => p.ownerId === playerId)
+
+  if (creditorId !== 'bank') {
+    // Vendre maisons/hôtels à la banque et transférer l'argent au créancier
+    let houseProceeds = 0
+    for (const prop of playerProps) {
+      const cell = getCellDef(prop.id)
+      if (prop.hotel && cell.houseCost) houseProceeds += cell.houseCost * 2.5
+      else if (prop.houses > 0 && cell.houseCost) houseProceeds += prop.houses * (cell.houseCost / 2)
+    }
+    s = transferMoney(s, 'bank', creditorId, houseProceeds + Math.max(0, player.money))
+    s = {
+      ...s,
+      properties: s.properties.map(p =>
+        p.ownerId === playerId
+          ? { ...p, ownerId: creditorId, houses: 0, hotel: false }
+          : p
+      ),
+    }
+  } else {
+    // Remettre les propriétés en vente (enchères gérées par le serveur)
+    s = {
+      ...s,
+      properties: s.properties.map(p =>
+        p.ownerId === playerId
+          ? { ...p, ownerId: undefined, houses: 0, hotel: false, mortgaged: false }
+          : p
+      ),
+    }
+  }
+
+  s = log(s, `${player.name} est en faillite !`, playerId)
+
+  // Vérifier si la partie est terminée
+  const activePlayers = s.players.filter(p => !p.isBankrupt)
+  if (activePlayers.length === 1) {
+    s = { ...s, phase: 'ended' }
+    s = log(s, `${activePlayers[0].name} remporte la partie !`, activePlayers[0].id)
+  } else if (s.currentPlayerId === playerId) {
+    s = nextPlayer(s)
+  }
+
+  return s
+}
+
+// ─── API publique ─────────────────────────────────────────────────────────────
+
+export function initGame(roomPlayers: RoomPlayer[]): GameState {
+  const players: Player[] = roomPlayers.map(rp => ({
+    id: rp.id,
+    name: rp.name,
+    color: rp.color,
+    position: 0,
+    money: STARTING_MONEY,
+    inJail: false,
+    jailTurns: 0,
+    isBankrupt: false,
+    getOutOfJailCards: 0,
+    isConnected: rp.isConnected,
+  }))
+
+  // Déterminer l'ordre de jeu : le joueur avec le plus haut dé commence
+  const shuffled = shuffle(players)
+
+  const properties: Property[] = CELLS
+    .filter(c => ['property', 'railroad', 'utility'].includes(c.type))
+    .map(c => ({
+      id: c.index,
+      ownerId: undefined,
+      houses: 0,
+      hotel: false,
+      mortgaged: false,
+    }))
+
+  const state: GameState = {
+    phase: 'playing',
+    turn: 1,
+    currentPlayerId: shuffled[0].id,
+    players: shuffled,
+    properties,
+    deck: {
+      chance: buildChanceDeck(),
+      community: buildCommunityDeck(),
+    },
+    log: [],
+    doublesCount: 0,
+    freeParkingPot: 0,
+  }
+
+  return log(state, `La partie commence ! C'est au tour de ${shuffled[0].name}.`)
+}
+
+export function rollDice(
+  state: GameState,
+  playerId: string,
+): { success: boolean; error?: string; state: GameState } {
+  if (state.phase !== 'playing') return { success: false, error: 'La partie n\'est pas en cours.', state }
+  if (state.currentPlayerId !== playerId) return { success: false, error: 'Ce n\'est pas votre tour.', state }
+
+  const die1 = rollDie()
+  const die2 = rollDie()
+  const total = die1 + die2
+  const isDouble = die1 === die2
+
+  const player = state.players.find(p => p.id === playerId)!
+  let s: GameState = { ...state, lastDice: [die1, die2] }
+
+  s = log(s, `${player.name} lance les dés : ${die1} + ${die2} = ${total}${isDouble ? ' (double !)' : ''}.`, playerId)
+
+  // Gestion de la prison
+  if (player.inJail) {
+    if (isDouble) {
+      s = {
+        ...s,
+        players: s.players.map(p =>
+          p.id === playerId ? { ...p, inJail: false, jailTurns: 0 } : p
+        ),
+        doublesCount: 0, // sort de prison avec double mais ne rejoue pas
+      }
+      s = log(s, `${player.name} sort de prison avec un double !`, playerId)
+    } else {
+      const newJailTurns = player.jailTurns + 1
+      if (newJailTurns >= 3) {
+        // 3e tour en prison — doit payer l'amende et sortir
+        s = transferMoney(s, playerId, 'free-parking', JAIL_FINE)
+        s = {
+          ...s,
+          players: s.players.map(p =>
+            p.id === playerId ? { ...p, inJail: false, jailTurns: 0 } : p
+          ),
+        }
+        s = log(s, `${player.name} paye ${JAIL_FINE} F d'amende et sort de prison.`, playerId)
+      } else {
+        s = {
+          ...s,
+          players: s.players.map(p =>
+            p.id === playerId ? { ...p, jailTurns: newJailTurns } : p
+          ),
+        }
+        s = log(s, `${player.name} reste en prison (tour ${newJailTurns}/3).`, playerId)
+        s = nextPlayer(s)
+        return { success: true, state: s }
+      }
+    }
+  } else {
+    // Gestion des doubles hors prison
+    if (isDouble) {
+      const newDoubles = s.doublesCount + 1
+      if (newDoubles >= 3) {
+        s = goToJail(s, playerId)
+        return { success: true, state: s }
+      }
+      s = { ...s, doublesCount: newDoubles }
+    }
+  }
+
+  // Déplacement
+  const newPosition = (player.position + total) % 40
+  const passedGo = !player.inJail && (player.position + total) >= 40
+
+  s = movePlayer(s, playerId, newPosition, passedGo)
+
+  // Appliquer les effets de la case
+  s = applyCellEffect(s, playerId, newPosition, total)
+
+  return { success: true, state: s }
+}
+
+function applyCellEffect(state: GameState, playerId: string, position: number, diceTotal: number): GameState {
+  const cell = getCellDef(position)
+  const player = state.players.find(p => p.id === playerId)!
+  let s = state
+
+  switch (cell.type) {
+    case 'go':
+      // Déjà géré dans movePlayer (passage)
+      break
+
+    case 'tax': {
+      const amount = cell.tax ?? 0
+      s = transferMoney(s, playerId, 'free-parking', amount)
+      s = log(s, `${player.name} paye ${amount} F d'impôts.`, playerId)
+      s = nextPlayer(s)
+      break
+    }
+
+    case 'go-to-jail':
+      s = goToJail(s, playerId)
+      // Pas de fin de tour automatique — le prochain joueur joue
+      s = nextPlayer(s)
+      break
+
+    case 'jail':
+      // Simple visite — rien à faire
+      s = log(s, `${player.name} est en visite à la prison.`, playerId)
+      break
+
+    case 'free-parking': {
+      const pot = s.freeParkingPot
+      if (pot > 0) {
+        s = { ...s, freeParkingPot: 0 }
+        s = transferMoney(s, 'bank', playerId, pot)
+        s = log(s, `${player.name} ramasse ${pot} F du Parc Gratuit !`, playerId)
+      } else {
+        s = log(s, `${player.name} se repose au Parc Gratuit.`, playerId)
+      }
+      s = nextPlayer(s)
+      break
+    }
+
+    case 'chance': {
+      const { state: s2, card } = drawCard(s, 'chance')
+      s = s2
+      s = log(s, `${player.name} tire une carte Chance : "${card.text}"`, playerId)
+      s = applyCardAction(s, playerId, card.action, diceTotal)
+      if (card.action.type !== 'go_to_jail') s = nextPlayer(s)
+      break
+    }
+
+    case 'community': {
+      const { state: s2, card } = drawCard(s, 'community')
+      s = s2
+      s = log(s, `${player.name} tire une carte Caisse de Communauté : "${card.text}"`, playerId)
+      s = applyCardAction(s, playerId, card.action, diceTotal)
+      if (card.action.type !== 'go_to_jail') s = nextPlayer(s)
+      break
+    }
+
+    case 'property':
+    case 'railroad':
+    case 'utility': {
+      const prop = s.properties.find(p => p.id === position)
+      if (!prop) { s = nextPlayer(s); break }
+
+      if (!prop.ownerId) {
+        // Proposer l'achat — l'état reste en attente de buy_property ou decline_property
+        s = log(s, `${player.name} s'arrête sur ${cell.name} (${cell.price} F). Achat possible.`, playerId)
+        // Ne pas appeler nextPlayer — le joueur doit décider
+        break
+      }
+
+      if (prop.ownerId === playerId) {
+        s = log(s, `${player.name} s'arrête sur sa propre propriété ${cell.name}.`, playerId)
+        s = nextPlayer(s)
+        break
+      }
+
+      if (prop.mortgaged) {
+        s = log(s, `${cell.name} est hypothéquée, pas de loyer.`, playerId)
+        s = nextPlayer(s)
+        break
+      }
+
+      const rent = calculateRent(s, playerId, position, diceTotal)
+      s = transferMoney(s, playerId, prop.ownerId, rent)
+      const owner = s.players.find(p => p.id === prop.ownerId)!
+      s = log(s, `${player.name} paye ${rent} F de loyer à ${owner.name} pour ${cell.name}.`, playerId)
+      s = checkBankruptcy(s, playerId)
+      if (!s.players.find(p => p.id === playerId)?.isBankrupt) s = nextPlayer(s)
+      break
+    }
+
+    default:
+      s = nextPlayer(s)
+  }
+
+  return s
+}
+
+export function buyProperty(
+  state: GameState,
+  playerId: string,
+): { success: boolean; error?: string; state: GameState } {
+  if (state.currentPlayerId !== playerId) return { success: false, error: 'Ce n\'est pas votre tour.', state }
+
+  const player = state.players.find(p => p.id === playerId)!
+  const cell = getCellDef(player.position)
+
+  if (!['property', 'railroad', 'utility'].includes(cell.type)) {
+    return { success: false, error: 'Cette case n\'est pas achetable.', state }
+  }
+
+  const prop = state.properties.find(p => p.id === player.position)
+  if (!prop || prop.ownerId) return { success: false, error: 'Cette propriété est déjà achetée.', state }
+
+  const price = cell.price ?? 0
+  if (player.money < price) return { success: false, error: 'Fonds insuffisants.', state }
+
+  let s = transferMoney(state, playerId, 'bank', price)
+  s = {
+    ...s,
+    properties: s.properties.map(p =>
+      p.id === player.position ? { ...p, ownerId: playerId } : p
+    ),
+  }
+  s = log(s, `${player.name} achète ${cell.name} pour ${price} F.`, playerId)
+  s = nextPlayer(s)
+
+  return { success: true, state: s }
+}
+
+export function declineProperty(
+  state: GameState,
+  playerId: string,
+): { success: boolean; error?: string; state: GameState } {
+  if (state.currentPlayerId !== playerId) return { success: false, error: 'Ce n\'est pas votre tour.', state }
+
+  const player = state.players.find(p => p.id === playerId)!
+  const cell = getCellDef(player.position)
+  let s = log(state, `${player.name} décline l'achat de ${cell.name}. Mise aux enchères...`, playerId)
+
+  // Initier les enchères
+  const activePlayers = s.players.filter(p => !p.isBankrupt)
+  s = {
+    ...s,
+    auctionState: {
+      propertyId: player.position,
+      currentBid: 0,
+      currentBidderId: '',
+      participants: activePlayers.map(p => p.id),
+    },
+  }
+
+  return { success: true, state: s }
+}
+
+export function auctionBid(
+  state: GameState,
+  playerId: string,
+  amount: number,
+): { success: boolean; error?: string; state: GameState } {
+  if (!state.auctionState) return { success: false, error: 'Pas d\'enchère en cours.', state }
+  if (!state.auctionState.participants.includes(playerId)) {
+    return { success: false, error: 'Vous ne participez plus à cette enchère.', state }
+  }
+  if (amount <= state.auctionState.currentBid) {
+    return { success: false, error: 'L\'offre doit dépasser l\'enchère actuelle.', state }
+  }
+  const player = state.players.find(p => p.id === playerId)!
+  if (player.money < amount) return { success: false, error: 'Fonds insuffisants.', state }
+
+  let s: GameState = {
+    ...state,
+    auctionState: {
+      ...state.auctionState,
+      currentBid: amount,
+      currentBidderId: playerId,
+    },
+  }
+  s = log(s, `${player.name} enchérit ${amount} F.`, playerId)
+  return { success: true, state: s }
+}
+
+export function auctionPass(
+  state: GameState,
+  playerId: string,
+): { success: boolean; error?: string; state: GameState } {
+  if (!state.auctionState) return { success: false, error: 'Pas d\'enchère en cours.', state }
+
+  const remaining = state.auctionState.participants.filter(id => id !== playerId)
+  let s = state
+
+  if (remaining.length === 0 || (remaining.length === 1 && state.auctionState.currentBid > 0)) {
+    // Enchère terminée
+    const winner = state.auctionState.currentBidderId
+    const bid = state.auctionState.currentBid
+    const propId = state.auctionState.propertyId
+    const cell = getCellDef(propId)
+
+    if (winner && bid > 0) {
+      s = transferMoney(s, winner, 'bank', bid)
+      s = {
+        ...s,
+        properties: s.properties.map(p =>
+          p.id === propId ? { ...p, ownerId: winner } : p
+        ),
+        auctionState: undefined,
+      }
+      const winnerPlayer = s.players.find(p => p.id === winner)!
+      s = log(s, `${winnerPlayer.name} remporte l'enchère pour ${cell.name} à ${bid} F.`, winner)
+    } else {
+      // Personne n'a enchéri
+      s = { ...s, auctionState: undefined }
+      s = log(s, `L'enchère pour ${cell.name} n'a pas trouvé preneur.`)
+    }
+    s = nextPlayer(s)
+  } else {
+    s = {
+      ...s,
+      auctionState: {
+        ...state.auctionState,
+        participants: remaining,
+      },
+    }
+  }
+  return { success: true, state: s }
+}
+
+export function mortgageProperty(
+  state: GameState,
+  playerId: string,
+  propertyId: number,
+): { success: boolean; error?: string; state: GameState } {
+  const prop = state.properties.find(p => p.id === propertyId)
+  if (!prop || prop.ownerId !== playerId) return { success: false, error: 'Vous ne possédez pas cette propriété.', state }
+  if (prop.mortgaged) return { success: false, error: 'Cette propriété est déjà hypothéquée.', state }
+  if (prop.houses > 0 || prop.hotel) return { success: false, error: 'Vendez les constructions avant d\'hypothéquer.', state }
+
+  const cell = getCellDef(propertyId)
+  const mortgageValue = cell.mortgage ?? 0
+
+  let s = transferMoney(state, 'bank', playerId, mortgageValue)
+  s = {
+    ...s,
+    properties: s.properties.map(p =>
+      p.id === propertyId ? { ...p, mortgaged: true } : p
+    ),
+  }
+  const player = s.players.find(p => p.id === playerId)!
+  s = log(s, `${player.name} hypothèque ${cell.name} pour ${mortgageValue} F.`, playerId)
+
+  return { success: true, state: s }
+}
+
+export function unmortgageProperty(
+  state: GameState,
+  playerId: string,
+  propertyId: number,
+): { success: boolean; error?: string; state: GameState } {
+  const prop = state.properties.find(p => p.id === propertyId)
+  if (!prop || prop.ownerId !== playerId) return { success: false, error: 'Vous ne possédez pas cette propriété.', state }
+  if (!prop.mortgaged) return { success: false, error: 'Cette propriété n\'est pas hypothéquée.', state }
+
+  const cell = getCellDef(propertyId)
+  const liftCost = Math.floor((cell.mortgage ?? 0) * (1 + MORTGAGE_INTEREST))
+  const player = state.players.find(p => p.id === playerId)!
+
+  if (player.money < liftCost) return { success: false, error: `Fonds insuffisants (${liftCost} F requis).`, state }
+
+  let s = transferMoney(state, playerId, 'bank', liftCost)
+  s = {
+    ...s,
+    properties: s.properties.map(p =>
+      p.id === propertyId ? { ...p, mortgaged: false } : p
+    ),
+  }
+  s = log(s, `${player.name} lève l'hypothèque sur ${cell.name} pour ${liftCost} F.`, playerId)
+
+  return { success: true, state: s }
+}
+
+export function buildHouse(
+  state: GameState,
+  playerId: string,
+  propertyId: number,
+): { success: boolean; error?: string; state: GameState } {
+  const prop = state.properties.find(p => p.id === propertyId)
+  if (!prop || prop.ownerId !== playerId) return { success: false, error: 'Vous ne possédez pas cette propriété.', state }
+
+  const cell = getCellDef(propertyId)
+  if (cell.type !== 'property' || !cell.colorGroup) return { success: false, error: 'Impossible de construire sur cette propriété.', state }
+  if (!ownsFullGroup(state, playerId, cell.colorGroup)) return { success: false, error: 'Vous devez posséder tout le groupe de couleur.', state }
+  if (prop.mortgaged) return { success: false, error: 'Cette propriété est hypothéquée.', state }
+
+  // Vérifier construction uniforme
+  const groupCells = getGroupCells(cell.colorGroup)
+  const groupProps = groupCells.map(c => state.properties.find(p => p.id === c.index)!)
+  const minHouses = Math.min(...groupProps.map(p => p.hotel ? 5 : p.houses))
+  const currentHouses = prop.hotel ? 5 : prop.houses
+
+  if (currentHouses > minHouses) {
+    return { success: false, error: 'Construisez uniformément sur tout le groupe.', state }
+  }
+  if (prop.hotel) return { success: false, error: 'Cette propriété a déjà un hôtel.', state }
+
+  const player = state.players.find(p => p.id === playerId)!
+
+  if (prop.houses === 4) {
+    // Construire un hôtel
+    const hotelCost = cell.hotelCost ?? 0
+    if (player.money < hotelCost) return { success: false, error: 'Fonds insuffisants.', state }
+
+    let s = transferMoney(state, playerId, 'bank', hotelCost)
+    s = {
+      ...s,
+      properties: s.properties.map(p =>
+        p.id === propertyId ? { ...p, houses: 0, hotel: true } : p
+      ),
+    }
+    s = log(s, `${player.name} construit un hôtel sur ${cell.name}.`, playerId)
+    return { success: true, state: s }
+  }
+
+  const houseCost = cell.houseCost ?? 0
+  if (player.money < houseCost) return { success: false, error: 'Fonds insuffisants.', state }
+
+  let s = transferMoney(state, playerId, 'bank', houseCost)
+  s = {
+    ...s,
+    properties: s.properties.map(p =>
+      p.id === propertyId ? { ...p, houses: p.houses + 1 } : p
+    ),
+  }
+  s = log(s, `${player.name} construit une maison sur ${cell.name}.`, playerId)
+  return { success: true, state: s }
+}
+
+export function sellHouse(
+  state: GameState,
+  playerId: string,
+  propertyId: number,
+): { success: boolean; error?: string; state: GameState } {
+  const prop = state.properties.find(p => p.id === propertyId)
+  if (!prop || prop.ownerId !== playerId) return { success: false, error: 'Vous ne possédez pas cette propriété.', state }
+  if (!prop.hotel && prop.houses === 0) return { success: false, error: 'Pas de construction à vendre.', state }
+
+  const cell = getCellDef(propertyId)
+
+  // Vérifier déconstruction uniforme
+  if (cell.colorGroup) {
+    const groupCells = getGroupCells(cell.colorGroup)
+    const groupProps = groupCells.map(c => state.properties.find(p => p.id === c.index)!)
+    const maxHouses = Math.max(...groupProps.map(p => p.hotel ? 5 : p.houses))
+    const currentHouses = prop.hotel ? 5 : prop.houses
+    if (currentHouses < maxHouses) {
+      return { success: false, error: 'Déconstruisez uniformément sur tout le groupe.', state }
+    }
+  }
+
+  const player = state.players.find(p => p.id === playerId)!
+
+  if (prop.hotel) {
+    const salePrice = Math.floor((cell.hotelCost ?? 0) / 2)
+    let s = transferMoney(state, 'bank', playerId, salePrice)
+    s = {
+      ...s,
+      properties: s.properties.map(p =>
+        p.id === propertyId ? { ...p, hotel: false, houses: 4 } : p
+      ),
+    }
+    s = log(s, `${player.name} vend l'hôtel de ${cell.name} pour ${salePrice} F.`, playerId)
+    return { success: true, state: s }
+  }
+
+  const salePrice = Math.floor((cell.houseCost ?? 0) / 2)
+  let s = transferMoney(state, 'bank', playerId, salePrice)
+  s = {
+    ...s,
+    properties: s.properties.map(p =>
+      p.id === propertyId ? { ...p, houses: p.houses - 1 } : p
+    ),
+  }
+  s = log(s, `${player.name} vend une maison sur ${cell.name} pour ${salePrice} F.`, playerId)
+  return { success: true, state: s }
+}
+
+export function proposeTrade(
+  state: GameState,
+  playerId: string,
+  offer: TradeOffer,
+): { success: boolean; error?: string; state: GameState } {
+  // Valider que les propriétés offertes appartiennent bien au proposant
+  for (const propId of offer.offer.propertyIds) {
+    const prop = state.properties.find(p => p.id === propId)
+    if (!prop || prop.ownerId !== playerId) {
+      return { success: false, error: 'Vous ne possédez pas toutes les propriétés offertes.', state }
+    }
+  }
+
+  const player = state.players.find(p => p.id === playerId)!
+  if (player.money < offer.offer.money) {
+    return { success: false, error: 'Fonds insuffisants pour cette offre.', state }
+  }
+
+  let s: GameState = { ...state, pendingTrade: offer }
+  const target = s.players.find(p => p.id === offer.toPlayerId)!
+  s = log(s, `${player.name} propose un échange à ${target.name}.`, playerId)
+
+  return { success: true, state: s }
+}
+
+export function acceptTrade(
+  state: GameState,
+  playerId: string,
+  tradeId: string,
+): { success: boolean; error?: string; state: GameState } {
+  const trade = state.pendingTrade
+  if (!trade || trade.id !== tradeId) return { success: false, error: 'Échange introuvable.', state }
+  if (trade.toPlayerId !== playerId) return { success: false, error: 'Cet échange ne vous est pas destiné.', state }
+
+  let s = state
+
+  // Transférer l'argent
+  s = transferMoney(s, trade.fromPlayerId, trade.toPlayerId, trade.offer.money)
+  s = transferMoney(s, trade.toPlayerId, trade.fromPlayerId, trade.request.money)
+
+  // Transférer les propriétés
+  s = {
+    ...s,
+    properties: s.properties.map(p => {
+      if (trade.offer.propertyIds.includes(p.id)) return { ...p, ownerId: trade.toPlayerId }
+      if (trade.request.propertyIds.includes(p.id)) return { ...p, ownerId: trade.fromPlayerId }
+      return p
+    }),
+    pendingTrade: undefined,
+  }
+
+  // Transférer les cartes sortie de prison
+  if (trade.offer.getOutOfJailCards > 0) {
+    s = {
+      ...s,
+      players: s.players.map(p => {
+        if (p.id === trade.fromPlayerId) return { ...p, getOutOfJailCards: p.getOutOfJailCards - trade.offer.getOutOfJailCards }
+        if (p.id === trade.toPlayerId) return { ...p, getOutOfJailCards: p.getOutOfJailCards + trade.offer.getOutOfJailCards }
+        return p
+      }),
+    }
+  }
+
+  const fromPlayer = s.players.find(p => p.id === trade.fromPlayerId)!
+  const toPlayer = s.players.find(p => p.id === trade.toPlayerId)!
+  s = log(s, `Échange accepté entre ${fromPlayer.name} et ${toPlayer.name}.`)
+
+  return { success: true, state: s }
+}
+
+export function refuseTrade(
+  state: GameState,
+  playerId: string,
+  tradeId: string,
+): { success: boolean; error?: string; state: GameState } {
+  const trade = state.pendingTrade
+  if (!trade || trade.id !== tradeId) return { success: false, error: 'Échange introuvable.', state }
+  if (trade.toPlayerId !== playerId) return { success: false, error: 'Cet échange ne vous est pas destiné.', state }
+
+  let s: GameState = { ...state, pendingTrade: undefined }
+  const target = s.players.find(p => p.id === playerId)!
+  s = log(s, `${target.name} refuse l'échange.`, playerId)
+
+  return { success: true, state: s }
+}
+
+export function payJailFine(
+  state: GameState,
+  playerId: string,
+): { success: boolean; error?: string; state: GameState } {
+  const player = state.players.find(p => p.id === playerId)!
+  if (!player.inJail) return { success: false, error: 'Vous n\'êtes pas en prison.', state }
+  if (state.currentPlayerId !== playerId) return { success: false, error: 'Ce n\'est pas votre tour.', state }
+  if (player.money < JAIL_FINE) return { success: false, error: 'Fonds insuffisants.', state }
+
+  let s = transferMoney(state, playerId, 'free-parking', JAIL_FINE)
+  s = {
+    ...s,
+    players: s.players.map(p =>
+      p.id === playerId ? { ...p, inJail: false, jailTurns: 0 } : p
+    ),
+  }
+  s = log(s, `${player.name} paye ${JAIL_FINE} F et sort de prison.`, playerId)
+
+  return { success: true, state: s }
+}
+
+export function useGetOutOfJailCard(
+  state: GameState,
+  playerId: string,
+): { success: boolean; error?: string; state: GameState } {
+  const player = state.players.find(p => p.id === playerId)!
+  if (!player.inJail) return { success: false, error: 'Vous n\'êtes pas en prison.', state }
+  if (state.currentPlayerId !== playerId) return { success: false, error: 'Ce n\'est pas votre tour.', state }
+  if (player.getOutOfJailCards <= 0) return { success: false, error: 'Vous n\'avez pas de carte sortie de prison.', state }
+
+  let s: GameState = {
+    ...state,
+    players: state.players.map(p =>
+      p.id === playerId
+        ? { ...p, inJail: false, jailTurns: 0, getOutOfJailCards: p.getOutOfJailCards - 1 }
+        : p
+    ),
+  }
+  // Remettre la carte dans le tas
+  s = { ...s, deck: { ...s.deck, chance: [...s.deck.chance, { id: 'ch8', text: 'Vous êtes libéré de prison.', action: { type: 'get_out_of_jail' } as CardAction }] } }
+  s = log(s, `${player.name} utilise sa carte "Libéré de prison".`, playerId)
+
+  return { success: true, state: s }
+}
+
+export function endTurn(
+  state: GameState,
+  playerId: string,
+): { success: boolean; error?: string; state: GameState } {
+  if (state.currentPlayerId !== playerId) return { success: false, error: 'Ce n\'est pas votre tour.', state }
+
+  let s = nextPlayer(state)
+  return { success: true, state: s }
+}
+
+export function bankruptcyAction(
+  state: GameState,
+  playerId: string,
+): { success: boolean; error?: string; state: GameState } {
+  const player = state.players.find(p => p.id === playerId)!
+  if (player.isBankrupt) return { success: false, error: 'Vous êtes déjà en faillite.', state }
+
+  const s = declareBankruptcy(state, playerId, 'bank')
+  return { success: true, state: s }
+}

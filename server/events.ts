@@ -1,0 +1,33 @@
+// Noms des événements Socket.IO — source de vérité
+export const EVENTS = {
+  // Client → Server
+  CREATE_ROOM: 'create_room',
+  JOIN_ROOM: 'join_room',
+  START_GAME: 'start_game',
+  ROLL_DICE: 'roll_dice',
+  BUY_PROPERTY: 'buy_property',
+  DECLINE_PROPERTY: 'decline_property',
+  MORTGAGE_PROPERTY: 'mortgage_property',
+  UNMORTGAGE_PROPERTY: 'unmortgage_property',
+  BUILD_HOUSE: 'build_house',
+  SELL_HOUSE: 'sell_house',
+  PROPOSE_TRADE: 'propose_trade',
+  ACCEPT_TRADE: 'accept_trade',
+  REFUSE_TRADE: 'refuse_trade',
+  DECLARE_BANKRUPTCY: 'declare_bankruptcy',
+  END_TURN: 'end_turn',
+  PAY_JAIL_FINE: 'pay_jail_fine',
+  USE_GET_OUT_OF_JAIL_CARD: 'use_get_out_of_jail_card',
+  AUCTION_BID: 'auction_bid',
+  AUCTION_PASS: 'auction_pass',
+
+  // Server → Client
+  ROOM_CREATED: 'room_created',
+  ROOM_UPDATED: 'room_updated',
+  GAME_STARTED: 'game_started',
+  STATE_UPDATE: 'state_update',
+  PLAYER_DISCONNECTED: 'player_disconnected',
+  GAME_OVER: 'game_over',
+  ERROR: 'error',
+  AUCTION_UPDATE: 'auction_update',
+} as const
