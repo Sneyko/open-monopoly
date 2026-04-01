@@ -7,6 +7,7 @@ interface DiceProps {
   onRoll?: () => void
   isMyTurn: boolean
   hasRolled: boolean
+  diceSize?: number
 }
 
 const DOTS: Record<number, [number, number][]> = {
@@ -51,7 +52,7 @@ function DieFace({
   )
 }
 
-export default function Dice({ values, onRoll, isMyTurn, hasRolled }: DiceProps) {
+export default function Dice({ values, onRoll, isMyTurn, hasRolled, diceSize = 72 }: DiceProps) {
   const uid = useId().replace(/:/g, 'x')
 
   // ── Animation des dés ──────────────────────────────────────────────────────
@@ -138,8 +139,8 @@ export default function Dice({ values, onRoll, isMyTurn, hasRolled }: DiceProps)
     <div className="flex flex-col items-center gap-3">
       {/* Dés + anneau timer */}
       <div className="relative flex items-center gap-4">
-        <DieFace value={display[0]} size={72} rolling={rolling} uid={`${uid}a`} />
-        <DieFace value={display[1]} size={72} rolling={rolling} uid={`${uid}b`} />
+        <DieFace value={display[0]} size={diceSize} rolling={rolling} uid={`${uid}a`} />
+        <DieFace value={display[1]} size={diceSize} rolling={rolling} uid={`${uid}b`} />
 
         {/* Timer circulaire visible uniquement quand c'est mon tour et pas encore lancé */}
         {shouldRun && (

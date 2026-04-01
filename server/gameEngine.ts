@@ -67,9 +67,9 @@ const CELLS: CellDef[] = [
   { index: 39, name: 'Jean-Jaurès',           type: 'property', colorGroup: 'dark-blue',  price: 400, rents: [50,200,600,1400,1700,2000], mortgage: 200, houseCost: 200, hotelCost: 200 },
 ]
 
-const SALARY = 20000        // 20 000 F en passant par GO
+const SALARY = 200           // 200 € en passant par GO
 const STARTING_MONEY = 1500 // en centaines de francs → simplifié à 1500 pour l'interface
-const JAIL_FINE = 50
+const JAIL_FINE = 200
 const JAIL_POSITION = 10
 const GO_TO_JAIL_POSITION = 30
 const MORTGAGE_INTEREST = 0.1
@@ -265,7 +265,8 @@ function nextPlayer(state: GameState): GameState {
     currentPlayerId: activePlayers[nextIndex].id,
     doublesCount: 0,
     turn: state.turn + 1,
-    lastDice: undefined,   // réinitialise pour que le prochain joueur puisse lancer
+    lastDice: undefined,         // réinitialise pour que le prochain joueur puisse lancer
+    awaitingParkingChoice: false, // toujours effacer entre les tours
   }
 }
 
@@ -1126,6 +1127,7 @@ export function endTurn(
   playerId: string,
 ): { success: boolean; error?: string; state: GameState } {
   if (state.currentPlayerId !== playerId) return { success: false, error: 'Ce n\'est pas votre tour.', state }
+  if (state.awaitingParkingChoice) return { success: false, error: 'Vous devez d\'abord choisir pour le Jardin Japonais.', state }
 
   let s = nextPlayer(state)
   return { success: true, state: s }
