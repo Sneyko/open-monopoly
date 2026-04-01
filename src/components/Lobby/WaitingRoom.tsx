@@ -21,7 +21,7 @@ export default function WaitingRoom({ room, myPlayerId }: WaitingRoomProps) {
   return (
     <div className="w-full max-w-sm fade-in-up">
       <div className="text-center mb-8">
-        <img src={logoSrc} alt="Logo Puceaupoly" className="w-16 h-16 mx-auto mb-3 select-none" />
+        <img src={logoSrc} alt="Logo Puceaupoly" className="w-24 h-24 mx-auto mb-4 select-none" />
         <h2 className="text-2xl font-black text-white mb-1">Salle d'attente</h2>
         <p className="text-white/30 text-sm">Partagez le code avec vos amis</p>
       </div>

@@ -82,10 +82,7 @@ export default function App() {
 
         {/* Logo */}
         <div className="text-center mb-10">
-          <img src={logoSrc} alt="Logo Puceaupoly" className="w-20 h-20 mx-auto mb-3 select-none" />
-          <h1 className="text-4xl font-black tracking-tight text-white mb-1">
-            Puceaupoly
-          </h1>
+          <img src={logoSrc} alt="Logo Puceaupoly" className="w-36 h-36 mx-auto mb-4 select-none" />
           <p className="text-white/30 text-sm">Open-source · Multijoueur · En ligne</p>
           <div className={`mt-3 text-xs inline-flex items-center gap-1.5 px-3 py-1 rounded-full border
             ${connected
