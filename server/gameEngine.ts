@@ -487,11 +487,17 @@ export function rollDice(
 ): { success: boolean; error?: string; state: GameState } {
   if (state.phase !== 'playing') return { success: false, error: 'La partie n\'est pas en cours.', state }
   if (state.currentPlayerId !== playerId) return { success: false, error: 'Ce n\'est pas votre tour.', state }
-  if (state.awaitingParkingChoice) return { success: false, error: 'Vous devez d\'abord faire votre choix au Jardin Japonais.', state }
-  if (state.awaitingPropertyDecision) return { success: false, error: 'Vous devez d\'abord acheter ou refuser la propriété.', state }
-  if (state.auctionState) return { success: false, error: 'Une enchère est en cours.', state }
-  if (state.lastDice && !lastRollWasDouble(state)) {
-    return { success: false, error: 'Vous avez déjà lancé les dés ce tour-ci.', state }
+
+  let s: GameState = state
+  if (s.auctionState) {
+    s = { ...s, auctionState: undefined }
+    s = log(s, 'Enchère annulée automatiquement pour débloquer la partie.')
+  }
+
+  if (s.awaitingParkingChoice) return { success: false, error: 'Vous devez d\'abord faire votre choix au Jardin Japonais.', state: s }
+  if (s.awaitingPropertyDecision) return { success: false, error: 'Vous devez d\'abord acheter ou refuser la propriété.', state: s }
+  if (s.lastDice && !lastRollWasDouble(s)) {
+    return { success: false, error: 'Vous avez déjà lancé les dés ce tour-ci.', state: s }
   }
 
   const die1 = rollDie()
@@ -499,8 +505,8 @@ export function rollDice(
   const total = die1 + die2
   const isDouble = die1 === die2
 
-  const player = state.players.find(p => p.id === playerId)!
-  let s: GameState = { ...state, lastDice: [die1, die2] }
+  const player = s.players.find(p => p.id === playerId)!
+  s = { ...s, lastDice: [die1, die2] }
 
   s = log(s, `${player.name} lance les dés : ${die1} + ${die2} = ${total}${isDouble ? ' (double !)' : ''}.`, playerId)
 
@@ -733,21 +739,9 @@ export function declineProperty(
 
   const player = state.players.find(p => p.id === playerId)!
   const cell = getCellDef(player.position)
-  let s = log(state, `${player.name} décline l'achat de ${cell.name}. Mise aux enchères...`, playerId)
-
-  // Initier les enchères
-  const activePlayers = s.players.filter(p => !p.isBankrupt)
-  s = {
-    ...s,
-    auctionState: {
-      propertyId: player.position,
-      currentBid: 0,
-      currentBidderId: '',
-      participants: activePlayers.map(p => p.id),
-    },
-    awaitingPropertyDecision: false,
-  }
-
+  let s = log(state, `${player.name} décline l'achat de ${cell.name}. Tour suivant.`, playerId)
+  s = { ...s, awaitingPropertyDecision: false, auctionState: undefined }
+  s = finishTurnAfterAction(s, true)
   return { success: true, state: s }
 }
 
@@ -1161,14 +1155,35 @@ export function endTurn(
   state: GameState,
   playerId: string,
 ): { success: boolean; error?: string; state: GameState } {
+  let s = state
   if (state.currentPlayerId !== playerId) return { success: false, error: 'Ce n\'est pas votre tour.', state }
-  if (!state.lastDice) return { success: false, error: 'Vous devez d\'abord lancer les dés.', state }
-  if (state.awaitingParkingChoice) return { success: false, error: 'Vous devez d\'abord choisir pour le Jardin Japonais.', state }
-  if (state.awaitingPropertyDecision) return { success: false, error: 'Vous devez d\'abord décider pour la propriété en attente.', state }
-  if (state.auctionState) return { success: false, error: 'Impossible de finir le tour pendant une enchère.', state }
-  if (lastRollWasDouble(state)) return { success: false, error: 'Vous avez fait un double, vous devez relancer les dés.', state }
+  if (s.auctionState) {
+    s = { ...s, auctionState: undefined }
+    s = log(s, 'Enchère annulée automatiquement pour débloquer la partie.')
+  }
+  if (!s.lastDice) return { success: false, error: 'Vous devez d\'abord lancer les dés.', state: s }
+  if (s.awaitingParkingChoice) return { success: false, error: 'Vous devez d\'abord choisir pour le Jardin Japonais.', state: s }
+  if (s.awaitingPropertyDecision) return { success: false, error: 'Vous devez d\'abord décider pour la propriété en attente.', state: s }
+  if (lastRollWasDouble(s)) return { success: false, error: 'Vous avez fait un double, vous devez relancer les dés.', state: s }
 
-  let s = nextPlayer(state)
+  return { success: true, state: nextPlayer(s) }
+}
+
+export function skipDisconnectedCurrentPlayer(
+  state: GameState,
+  playerId: string,
+): { success: boolean; error?: string; state: GameState } {
+  if (state.currentPlayerId !== playerId) return { success: false, error: 'Le joueur déconnecté n\'est pas le joueur courant.', state }
+
+  const player = state.players.find(p => p.id === playerId)
+  let s: GameState = {
+    ...state,
+    awaitingParkingChoice: false,
+    awaitingPropertyDecision: false,
+    auctionState: undefined,
+  }
+  s = log(s, `${player?.name ?? 'Un joueur'} est déconnecté. Tour passé automatiquement.`, playerId)
+  s = nextPlayer(s)
   return { success: true, state: s }
 }
 

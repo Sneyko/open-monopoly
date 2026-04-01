@@ -246,6 +246,12 @@ io.on('connection', (socket) => {
     const player = room.players.find(p => p.id === playerId)
     if (!player) return
 
+    if (room.gameState && room.gameState.currentPlayerId === playerId) {
+      const skipResult = engine.skipDisconnectedCurrentPlayer(room.gameState, playerId)
+      room.gameState = skipResult.state
+      updateRoom(room)
+    }
+
     io.to(room.code).emit(EVENTS.PLAYER_DISCONNECTED, {
       playerId,
       playerName: player.name,

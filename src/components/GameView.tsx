@@ -107,12 +107,12 @@ export default function GameView() {
   const currentPlayer = gameState.players.find(p => p.id === gameState.currentPlayerId)
   const cellAtMyPosition = gameState.properties.find(p => p.id === (me?.position ?? -1))
   const lastWasDouble = !!gameState.lastDice && gameState.lastDice[0] === gameState.lastDice[1]
-  const hasPendingTurnResolution = !!gameState.awaitingParkingChoice || !!gameState.awaitingPropertyDecision || !!gameState.auctionState
+  const hasPendingTurnResolution = !!gameState.awaitingParkingChoice || !!gameState.awaitingPropertyDecision
   const canRollNow = isMyTurn && !me?.isBankrupt && (!gameState.lastDice || (lastWasDouble && !hasPendingTurnResolution))
   const canBuy = isMyTurn && !!gameState.awaitingPropertyDecision && !!cellAtMyPosition && !cellAtMyPosition.ownerId
   const meInJail = me?.inJail ?? false
   const hasRolled = !canRollNow
-  const canEndTurn = isMyTurn && !me?.isBankrupt && !!gameState.lastDice && !gameState.awaitingParkingChoice && !gameState.awaitingPropertyDecision && !gameState.auctionState && !lastWasDouble
+  const canEndTurn = isMyTurn && !me?.isBankrupt && !!gameState.lastDice && !gameState.awaitingParkingChoice && !gameState.awaitingPropertyDecision && !lastWasDouble
 
   if (gameState.phase === 'ended') {
     const winner = gameState.players.find(p => !p.isBankrupt)

@@ -137,20 +137,23 @@ export default function Dice({ values, onRoll, isMyTurn, hasRolled, diceSize = 7
 
   return (
     <div className="flex flex-col items-center gap-3">
-      {/* Dés + anneau timer */}
-      <div className="relative flex items-center gap-4">
+      {/* Dés */}
+      <div className="flex items-center gap-4">
         <DieFace value={display[0]} size={diceSize} rolling={rolling} uid={`${uid}a`} />
         <DieFace value={display[1]} size={diceSize} rolling={rolling} uid={`${uid}b`} />
+      </div>
 
-        {/* Timer circulaire visible uniquement quand c'est mon tour et pas encore lancé */}
-        {shouldRun && (
-          <div className="absolute -top-3 -right-3 w-12 h-12 flex items-center justify-center">
-            <svg width="48" height="48" viewBox="0 0 48 48" style={{ transform: 'rotate(-90deg)' }}>
-              {/* Fond */}
-              <circle cx="24" cy="24" r={R} fill="none"
-                stroke="rgba(255,255,255,0.08)" strokeWidth="3" />
-              {/* Arc progression */}
-              <circle cx="24" cy="24" r={R} fill="none"
+      {/* Timer (séparé des dés pour éviter la superposition) */}
+      {shouldRun && (
+        <div className="w-full flex items-center justify-center gap-2 fade-in-up">
+          <div className="w-10 h-10 flex items-center justify-center relative">
+            <svg width="40" height="40" viewBox="0 0 48 48" style={{ transform: 'rotate(-90deg)' }}>
+              <circle cx="24" cy="24" r={R} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="3" />
+              <circle
+                cx="24"
+                cy="24"
+                r={R}
+                fill="none"
                 stroke={urgent ? '#ef4444' : '#10b981'}
                 strokeWidth="3"
                 strokeDasharray={`${arc} ${C}`}
@@ -158,16 +161,13 @@ export default function Dice({ values, onRoll, isMyTurn, hasRolled, diceSize = 7
                 style={{ transition: 'stroke-dasharray 0.9s linear, stroke 0.3s' }}
               />
             </svg>
-            {/* Chiffre */}
-            <span
-              className="absolute text-xs font-bold tabular-nums"
-              style={{ color: urgent ? '#ef4444' : '#10b981' }}
-            >
+            <span className="absolute text-[11px] font-bold tabular-nums" style={{ color: urgent ? '#ef4444' : '#10b981' }}>
               {timeLeft}
             </span>
           </div>
-        )}
-      </div>
+          <span className="text-[11px] text-white/55">avant lancer auto</span>
+        </div>
+      )}
 
       {/* Résultat du lancer */}
       {total !== null && !rolling && (
