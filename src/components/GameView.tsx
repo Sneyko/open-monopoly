@@ -11,6 +11,7 @@ import EventBanner from './UI/EventBanner'
 import FreeParkingModal from './UI/FreeParkingModal'
 import { useGame } from '../hooks/useGame'
 import { useSocket } from '../hooks/useSocket'
+import { useAnimatedPlayers } from '../hooks/useAnimatedPlayers'
 import { useRoomStore } from '../store/roomStore'
 import type { TradeOffer } from '../../shared/types'
 import karimEnerveSrc from '../assets/karim-enerve.svg'
@@ -100,6 +101,7 @@ export default function GameView() {
   const prevCardRef = useRef<string | undefined>(undefined)
   const prevTdTriggerRef = useRef<string | undefined>(undefined)
   const prevBillTriggerRef = useRef<string | undefined>(undefined)
+  const animatedPlayers = useAnimatedPlayers(gameState?.players ?? [])
 
   // ── Auto-rotation : la rangée du pion du joueur reste toujours en bas ──
   const myPosition = gameState?.players.find(p => p.id === myPlayerId)?.position
@@ -270,7 +272,7 @@ export default function GameView() {
           }}
         >
           <Board
-            players={gameState.players.map(p => ({
+            players={animatedPlayers.map(p => ({
               id: p.id, name: p.name, color: p.color, position: p.position,
             }))}
             properties={gameState.properties}

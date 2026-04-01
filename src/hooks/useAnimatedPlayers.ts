@@ -56,8 +56,8 @@ export function useAnimatedPlayers(players: Player[]): Player[] {
         path.push(cur)
       }
 
-      // Délai par case : entre 80ms et 150ms, total visé ~1s max
-      const delay = Math.max(80, Math.min(150, 1000 / path.length))
+      // Délai par case plus visible pour un rendu "à la main"
+      const delay = Math.max(130, Math.min(220, 1800 / path.length))
 
       // Annule l'animation précédente pour ce joueur
       clearTimeout(timers.current[player.id])
@@ -65,7 +65,7 @@ export function useAnimatedPlayers(players: Player[]): Player[] {
       const playerId = player.id
       let step = 0
 
-      // Démarre après un léger délai pour laisser l'animation des dés se terminer
+      // Démarre avec une très courte latence pour garder le rythme du jeu
       const run = () => {
         if (!mounted.current) return
         if (step >= path.length) return
@@ -78,7 +78,7 @@ export function useAnimatedPlayers(players: Player[]): Player[] {
         }
       }
 
-      timers.current[playerId] = setTimeout(run, 500)
+      timers.current[playerId] = setTimeout(run, 120)
     }
   }, [players])
 

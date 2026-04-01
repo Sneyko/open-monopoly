@@ -8,7 +8,6 @@
  */
 
 import React from "react";
-import { motion } from 'framer-motion'
 import plateauSrc from "../../assets/plateau.svg";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -324,22 +323,41 @@ const PAWN_OFFSETS = [
   { dx: 0, dy: -40 },
 ]
 
-function forwardPath(from: number, to: number): number[] {
-  if (from === to) return [to]
-  const path: number[] = []
-  let cur = from
-  while (cur !== to) {
-    cur = (cur + 1) % 40
-    path.push(cur)
-  }
-  return path
+function PawnCluster({ pawns, cx, cy, currentPlayerId }: { pawns: Player[]; cx: number; cy: number; currentPlayerId?: string }) {
+  return (
+    <g pointerEvents="none">
+      {pawns.map((player, i) => {
+        const off = PAWN_OFFSETS[i % PAWN_OFFSETS.length]
+        const isActive = player.id === currentPlayerId
+        const colorClass = PLAYER_COLOR_CLASS[player.color]
+        const scale = isActive ? 1.08 : 1
+        const lift = isActive ? -6 : 0
+
+        return (
+          <g key={player.id} transform={`translate(${cx + off.dx}, ${cy + off.dy + lift}) scale(${scale})`}>
+            {isActive && (
+              <circle cx={0} cy={-9} r="22" className={`${colorClass} opacity-25`} />
+            )}
+            <g filter="url(#drop-shadow)">
+              <circle cx={0} cy={-9} r={isActive ? 17 : 15}
+                fill="none" stroke="white" strokeWidth={isActive ? 3 : 1.5} opacity={isActive ? 0.9 : 0.5}/>
+              <ellipse cx={0} cy={17} rx="16" ry="7" className={`${colorClass} opacity-90`} />
+              <rect x={-10} y={0} width="20" height="19" rx="3" className={colorClass}/>
+              <circle cx={0} cy={-9} r={isActive ? 16 : 14} className={colorClass}/>
+              <circle cx={0} cy={-9} r={isActive ? 16 : 14}
+                fill="none" stroke={isActive ? 'white' : 'rgba(255,255,255,0.4)'} strokeWidth={isActive ? 2.5 : 1.5}/>
+              <circle cx={-5} cy={-15} r={isActive ? 6 : 5} fill="white" opacity={isActive ? 0.5 : 0.3}/>
+            </g>
+          </g>
+        )
+      })}
+    </g>
+  )
 }
 
 // ─── Composant principal ──────────────────────────────────────────────────────
 
 const Board: React.FC<BoardProps> = ({ players, properties, onCellClick, selectedCell, currentPlayerId, boostedPropertyId }) => {
-  const previousPositionsRef = React.useRef<Record<string, number>>({})
-
   const propertyMap = new Map<number, Property>(
     properties.map((p) => [p.id, p])
   );
@@ -350,12 +368,6 @@ const Board: React.FC<BoardProps> = ({ players, properties, onCellClick, selecte
     arr.push(player);
     pawnsByPosition.set(player.position, arr);
   }
-
-  React.useEffect(() => {
-    for (const player of players) {
-      previousPositionsRef.current[player.id] = player.position
-    }
-  }, [players])
 
   return (
     <div style={{ position: "relative", width: "100%", aspectRatio: "1" }}>
@@ -483,50 +495,12 @@ const Board: React.FC<BoardProps> = ({ players, properties, onCellClick, selecte
         })}
 
         {/* Passe 2 : pions (toujours au-dessus de tout) */}
-        <g pointerEvents="none">
-          {players.map((player) => {
-            const slot = (pawnsByPosition.get(player.position) ?? []).findIndex(p => p.id === player.id)
-            const off = PAWN_OFFSETS[(slot >= 0 ? slot : 0) % PAWN_OFFSETS.length]
-            const from = previousPositionsRef.current[player.id] ?? player.position
-            const pathCells = forwardPath(from, player.position)
-            const xPath = pathCells.map(pos => getCellRect(pos).cx + off.dx)
-            const yPath = pathCells.map(pos => getCellRect(pos).cy + off.dy)
-            const isActive = player.id === currentPlayerId
-            const colorClass = PLAYER_COLOR_CLASS[player.color]
-            const steps = Math.max(1, xPath.length)
-
-            return (
-              <motion.g
-                key={`pawn-${player.id}`}
-                initial={false}
-                animate={{
-                  x: xPath.length > 1 ? xPath : xPath[0],
-                  y: yPath.length > 1 ? yPath : yPath[0],
-                }}
-                transition={{
-                  duration: 0.3 * steps,
-                  ease: 'linear',
-                  times: xPath.length > 1 ? xPath.map((_, i) => i / (xPath.length - 1)) : undefined,
-                }}
-                className={isActive ? 'scale-110 -translate-y-2 drop-shadow-xl transition-all duration-300' : 'transition-all duration-300'}
-              >
-                {isActive && (
-                  <circle cx={0} cy={-9} r="22" className={`${colorClass} opacity-25`} />
-                )}
-                <g filter="url(#drop-shadow)">
-                  <circle cx={0} cy={-9} r={isActive ? 17 : 15}
-                    fill="none" stroke="white" strokeWidth={isActive ? 3 : 1.5} opacity={isActive ? 0.9 : 0.5}/>
-                  <ellipse cx={0} cy={17} rx="16" ry="7" className={`${colorClass} opacity-90`} />
-                  <rect x={-10} y={0} width="20" height="19" rx="3" className={colorClass}/>
-                  <circle cx={0} cy={-9} r={isActive ? 16 : 14} className={colorClass}/>
-                  <circle cx={0} cy={-9} r={isActive ? 16 : 14}
-                    fill="none" stroke={isActive ? 'white' : 'rgba(255,255,255,0.4)'} strokeWidth={isActive ? 2.5 : 1.5}/>
-                  <circle cx={-5} cy={-15} r={isActive ? 6 : 5} fill="white" opacity={isActive ? 0.5 : 0.3}/>
-                </g>
-              </motion.g>
-            )
-          })}
-        </g>
+        {CELLS.map((cell) => {
+          const { cx, cy } = getCellRect(cell.index)
+          const pawns = pawnsByPosition.get(cell.index) ?? []
+          if (pawns.length === 0) return null
+          return <PawnCluster key={`pawns-${cell.index}`} pawns={pawns} cx={cx} cy={cy} currentPlayerId={currentPlayerId} />
+        })}
       </svg>
     </div>
   );
