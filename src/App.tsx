@@ -27,11 +27,11 @@ export default function App() {
       setScreen('waiting')
     }
     function onGameStarted(data: { gameState: NonNullable<typeof gameState> }) {
-      setGameState(data.gameState)
+      setGameState(data.gameState, myPlayerId)
       setScreen('playing')
     }
     function onStateUpdate(data: { gameState: NonNullable<typeof gameState> }) {
-      setGameState(data.gameState)
+      setGameState(data.gameState, myPlayerId)
     }
     function onError({ message }: { message: string }) {
       setError(message)
@@ -55,7 +55,7 @@ export default function App() {
       socket.off('state_update', onStateUpdate as never)
       socket.off('error', onError as never)
     }
-  }, [socket, setRoom, setGameState])
+  }, [socket, setRoom, setGameState, myPlayerId])
 
   useEffect(() => {
     if (room && myName && !myPlayerId) {

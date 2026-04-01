@@ -8,6 +8,7 @@
  */
 
 import React from "react";
+import { motion } from 'framer-motion'
 import plateauSrc from "../../assets/plateau.svg";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -46,14 +47,14 @@ interface BoardProps {
 
 // ─── Données des cases ────────────────────────────────────────────────────────
 
-const PLAYER_COLORS: Record<PlayerColor, string> = {
-  red: "#E24B4A",
-  blue: "#378ADD",
-  green: "#639922",
-  yellow: "#EF9F27",
-  purple: "#7F77DD",
-  orange: "#D85A30",
-};
+const PLAYER_COLOR_CLASS: Record<PlayerColor, string> = {
+  red: 'fill-player-red',
+  blue: 'fill-player-blue',
+  green: 'fill-player-green',
+  yellow: 'fill-player-yellow',
+  purple: 'fill-player-purple',
+  orange: 'fill-player-orange',
+}
 
 type CellType =
   | "property"
@@ -210,8 +211,8 @@ const BAND_H = 43; // 18 × 2.3846 — épaisseur de la bande colorée dans le S
 
 // Maison en forme de maison (carré + toit triangulaire)
 // cx/cy = centre de la maison, size = largeur, angle = rotation (0 = toit vers le haut)
-function HouseShape({ cx, cy, size, angle, color, shadow }: {
-  cx: number; cy: number; size: number; angle: number; color: string; shadow?: string;
+function HouseShape({ cx, cy, size, angle, color }: {
+  cx: number; cy: number; size: number; angle: number; color: string;
 }) {
   const bodyH = size * 0.55;
   const roofH = size * 0.48;
@@ -221,26 +222,23 @@ function HouseShape({ cx, cy, size, angle, color, shadow }: {
   // Toit : triangle au-dessus du corps
   const roofPoints = `${cx},${by - roofH} ${cx - size / 2 - 1},${by} ${cx + size / 2 + 1},${by}`;
   return (
-    <g transform={`rotate(${angle}, ${cx}, ${cy})`}>
-      {shadow && <rect x={bx + 1} y={by + 1} width={size} height={bodyH} rx="1.5" fill={shadow} opacity="0.4"/>}
+    <g transform={`rotate(${angle}, ${cx}, ${cy})`} filter="url(#drop-shadow)">
       <rect x={bx} y={by} width={size} height={bodyH} rx="1.5" fill={color}/>
       <rect x={bx + size * 0.35} y={by + bodyH * 0.45} width={size * 0.3} height={bodyH * 0.55} rx="1" fill="rgba(0,0,0,0.25)"/>
-      {shadow && <polygon points={`${cx},${by - roofH - 0.5} ${cx - size / 2 - 1},${by + 0.5} ${cx + size / 2 + 1},${by + 0.5}`} fill={shadow} opacity="0.4" transform={`translate(1,1)`}/>}
       <polygon points={roofPoints} fill={color} style={{ filter: 'brightness(0.78)' }}/>
     </g>
   );
 }
 
 // Hôtel (bâtiment plus large avec toit plat et fenêtres)
-function HotelShape({ cx, cy, w, h, angle, color, shadow }: {
-  cx: number; cy: number; w: number; h: number; angle: number; color: string; shadow?: string;
+function HotelShape({ cx, cy, w, h, angle, color }: {
+  cx: number; cy: number; w: number; h: number; angle: number; color: string;
 }) {
   const bx = cx - w / 2;
   const by = cy - h / 2;
   const roofH = h * 0.22;
   return (
-    <g transform={`rotate(${angle}, ${cx}, ${cy})`}>
-      {shadow && <rect x={bx + 1.5} y={by + 1.5} width={w} height={h} rx="2.5" fill={shadow} opacity="0.4"/>}
+    <g transform={`rotate(${angle}, ${cx}, ${cy})`} filter="url(#drop-shadow)">
       {/* Corps */}
       <rect x={bx} y={by + roofH} width={w} height={h - roofH} rx="2" fill={color}/>
       {/* Toit */}
@@ -264,7 +262,6 @@ function HouseIndicator({
 }) {
   const green  = "#3ec853";
   const red    = "#e63c3c";
-  const shadow = "#000000";
 
   // Orientation : angle de rotation pour que le toit pointe vers l'intérieur du plateau
   // isBottom → toit vers le haut (0°), isTop → toit vers le bas (180°), isLeft → toit vers la droite (90°), isRight → toit vers la gauche (270°)
@@ -281,7 +278,7 @@ function HouseIndicator({
     const cy = bandY + bandH / 2;
     const hw = (isLeft || isRight) ? BAND_H * 0.72 : Math.min(bandW * 0.7, 52);
     const hh = (isLeft || isRight) ? Math.min(bandH * 0.72, 52) : BAND_H * 0.78;
-    return <HotelShape cx={cx} cy={cy} w={hw} h={hh} angle={angle} color={red} shadow={shadow}/>;
+    return <HotelShape cx={cx} cy={cy} w={hw} h={hh} angle={angle} color={red}/>;
   }
 
   const houseSize = Math.min(
@@ -298,7 +295,7 @@ function HouseIndicator({
     return (
       <g>
         {Array.from({ length: count }).map((_, i) => (
-          <HouseShape key={i} cx={startX + i * (houseSize + gap)} cy={cy} size={houseSize} angle={angle} color={green} shadow={shadow}/>
+          <HouseShape key={i} cx={startX + i * (houseSize + gap)} cy={cy} size={houseSize} angle={angle} color={green}/>
         ))}
       </g>
     );
@@ -310,7 +307,7 @@ function HouseIndicator({
   return (
     <g>
       {Array.from({ length: count }).map((_, i) => (
-        <HouseShape key={i} cx={cx} cy={startY + i * (houseSize + gap)} size={houseSize} angle={angle} color={green} shadow={shadow}/>
+        <HouseShape key={i} cx={cx} cy={startY + i * (houseSize + gap)} size={houseSize} angle={angle} color={green}/>
       ))}
     </g>
   );
@@ -318,58 +315,30 @@ function HouseIndicator({
 
 // ─── Pions ────────────────────────────────────────────────────────────────────
 
-function PawnCluster({ pawns, cx, cy, currentPlayerId }: { pawns: Player[]; cx: number; cy: number; currentPlayerId?: string }) {
-  const offsets = [
-    { dx: 0,   dy: 0   },
-    { dx: -28, dy: -20 },
-    { dx: 28,  dy: -20 },
-    { dx: -28, dy: 20  },
-    { dx: 28,  dy: 20  },
-    { dx: 0,   dy: -40 },
-  ];
+const PAWN_OFFSETS = [
+  { dx: 0, dy: 0 },
+  { dx: -28, dy: -20 },
+  { dx: 28, dy: -20 },
+  { dx: -28, dy: 20 },
+  { dx: 28, dy: 20 },
+  { dx: 0, dy: -40 },
+]
 
-  return (
-    <g>
-      {pawns.map((player, i) => {
-        const off = offsets[i % offsets.length];
-        const px = cx + off.dx;
-        const py = cy + off.dy;
-        const color = PLAYER_COLORS[player.color];
-        const isActive = player.id === currentPlayerId;
-
-        return (
-          <g key={player.id}>
-            {/* Halo pour le joueur actif */}
-            {isActive && (
-              <circle cx={px} cy={py - 9} r="22" fill={color} opacity="0.25"
-                style={{ filter: `drop-shadow(0 0 8px ${color})` }}/>
-            )}
-            {/* Anneau extérieur blanc pour visibilité */}
-            <circle cx={px} cy={py - 9} r={isActive ? 17 : 15}
-              fill="none" stroke="white" strokeWidth={isActive ? 3 : 1.5} opacity={isActive ? 0.9 : 0.5}/>
-            {/* Ombre portée */}
-            <ellipse cx={px} cy={py + 20} rx="17" ry="8" fill="black" opacity="0.5"/>
-            {/* Corps */}
-            <ellipse cx={px} cy={py + 17} rx="16" ry="7" fill={color} opacity="0.9"/>
-            <rect x={px - 10} y={py} width="20" height="19" rx="3" fill={color}/>
-            {/* Tête */}
-            <circle cx={px} cy={py - 9} r={isActive ? 16 : 14} fill={color}/>
-            {/* Contour couleur vive */}
-            <circle cx={px} cy={py - 9} r={isActive ? 16 : 14}
-              fill="none" stroke={isActive ? 'white' : 'rgba(255,255,255,0.4)'} strokeWidth={isActive ? 2.5 : 1.5}/>
-            {/* Reflet */}
-            <circle cx={px - 5} cy={py - 15} r={isActive ? 6 : 5} fill="white" opacity={isActive ? 0.5 : 0.3}/>
-          </g>
-        );
-      })}
-    </g>
-  );
+function forwardPath(from: number, to: number): number[] {
+  if (from === to) return [to]
+  const path: number[] = []
+  let cur = from
+  while (cur !== to) {
+    cur = (cur + 1) % 40
+    path.push(cur)
+  }
+  return path
 }
 
 // ─── Composant principal ──────────────────────────────────────────────────────
 
 const Board: React.FC<BoardProps> = ({ players, properties, onCellClick, selectedCell, currentPlayerId, boostedPropertyId }) => {
-  const [hoveredCell, setHoveredCell] = React.useState<number | null>(null);
+  const previousPositionsRef = React.useRef<Record<string, number>>({})
 
   const propertyMap = new Map<number, Property>(
     properties.map((p) => [p.id, p])
@@ -381,6 +350,12 @@ const Board: React.FC<BoardProps> = ({ players, properties, onCellClick, selecte
     arr.push(player);
     pawnsByPosition.set(player.position, arr);
   }
+
+  React.useEffect(() => {
+    for (const player of players) {
+      previousPositionsRef.current[player.id] = player.position
+    }
+  }, [players])
 
   return (
     <div style={{ position: "relative", width: "100%", aspectRatio: "1" }}>
@@ -410,6 +385,9 @@ const Board: React.FC<BoardProps> = ({ players, properties, onCellClick, selecte
             .boost-dot { animation: boost-pulse 1.4s ease-in-out infinite; }
             .boost-ring-anim { animation: boost-ring 2s linear infinite; }
           `}</style>
+          <filter id="drop-shadow" x="-50%" y="-50%" width="200%" height="200%">
+            <feDropShadow dx="0" dy="2.5" stdDeviation="3" floodOpacity="0.45" />
+          </filter>
         </defs>
         {/* Passe 1 : highlights hover/sélection + maisons */}
         {CELLS.map((cell) => {
@@ -419,44 +397,37 @@ const Board: React.FC<BoardProps> = ({ players, properties, onCellClick, selecte
           const isCorner = [0, 10, 20, 30].includes(cell.index);
           const hasHouses = !isCorner && ((property?.houses ?? 0) > 0 || (property?.hotel ?? false));
           const isOwned = !isCorner && !!property?.ownerId && !hasHouses;
-          const ownerColor = isOwned
-            ? PLAYER_COLORS[(players.find(p => p.id === property!.ownerId)?.color ?? 'red')]
-            : null;
+          const ownerColorClass = isOwned
+            ? PLAYER_COLOR_CLASS[(players.find(p => p.id === property!.ownerId)?.color ?? 'red')]
+            : 'fill-player-red';
           const isBoosted = boostedPropertyId != null && cell.index === boostedPropertyId;
           const isSelected = selectedCell === cell.index;
-          const isHovered  = hoveredCell  === cell.index;
 
           return (
             <g key={cell.index}>
               {/* Zone cliquable + hover */}
               <rect
                 x={x} y={y} width={w} height={h}
-                fill={
-                  isSelected ? "rgba(255,210,0,0.18)"
-                  : isHovered ? "rgba(255,255,255,0.10)"
-                  : "transparent"
-                }
-                stroke={
-                  isSelected ? "rgba(255,210,0,0.85)"
-                  : isHovered ? "rgba(255,255,255,0.45)"
-                  : "none"
-                }
+                fill={isSelected ? "rgba(255,210,0,0.18)" : "transparent"}
+                stroke={isSelected ? "rgba(255,210,0,0.85)" : "transparent"}
                 strokeWidth={isSelected ? 4 : 3}
                 rx={isCorner ? 6 : 3}
                 onClick={onCellClick ? () => onCellClick(cell.index) : undefined}
-                onMouseEnter={() => setHoveredCell(cell.index)}
-                onMouseLeave={() => setHoveredCell(null)}
-                style={{ cursor: onCellClick ? "pointer" : "default" }}
+                className={onCellClick
+                  ? 'hover:fill-white/10 hover:stroke-white/45 transition-colors duration-150 cursor-pointer'
+                  : ''}
               />
 
               {/* Maisons / hôtel */}
               {hasHouses && (
-                <HouseIndicator
-                  x={x} y={y} w={w} h={h}
-                  houses={property!.houses}
-                  hotel={property!.hotel}
-                  isBottom={isBottom} isTop={isTop} isLeft={isLeft} isRight={isRight}
-                />
+                <g pointerEvents="none">
+                  <HouseIndicator
+                    x={x} y={y} w={w} h={h}
+                    houses={property!.houses}
+                    hotel={property!.hotel}
+                    isBottom={isBottom} isTop={isTop} isLeft={isLeft} isRight={isRight}
+                  />
+                </g>
               )}
 
               {/* Boost Jardin Japonais ⚡ — halo animé sur toute la case */}
@@ -465,7 +436,7 @@ const Board: React.FC<BoardProps> = ({ players, properties, onCellClick, selecte
                 const bcx = rect.cx;
                 const bcy = rect.cy;
                 return (
-                  <g>
+                  <g pointerEvents="none">
                     {/* Halo doré clignotant */}
                     <rect
                       x={x + margin} y={y + margin}
@@ -485,7 +456,7 @@ const Board: React.FC<BoardProps> = ({ players, properties, onCellClick, selecte
               })()}
 
               {/* Indicateur propriétaire (sans maison) : bande colorée opaque + pastille */}
-              {isOwned && ownerColor && (() => {
+              {isOwned && (() => {
                 // Coordonnées de la bande colorée selon la rangée
                 const bandX = isLeft ? x + w - BAND_H : isRight ? x : x;
                 const bandY = isBottom ? y : isTop ? y + h - BAND_H : y;
@@ -495,13 +466,13 @@ const Board: React.FC<BoardProps> = ({ players, properties, onCellClick, selecte
                 const cy2 = bandY + bandH2 / 2;
                 const r = Math.min(bandW, bandH2) * 0.28;
                 return (
-                  <g>
+                  <g pointerEvents="none">
                     {/* Fond semi-transparent couleur joueur sur la bande */}
                     <rect x={bandX} y={bandY} width={bandW} height={bandH2}
-                      fill={ownerColor} opacity={0.28} rx={2}/>
+                      className={ownerColorClass} opacity={0.28} rx={2}/>
                     {/* Pastille centrale */}
                     <circle cx={cx2} cy={cy2} r={r + 2} fill="rgba(0,0,0,0.55)"/>
-                    <circle cx={cx2} cy={cy2} r={r} fill={ownerColor}/>
+                    <circle cx={cx2} cy={cy2} r={r} className={ownerColorClass}/>
                     {/* Mini croix/maison blanche pour signifier "acheté" */}
                     <circle cx={cx2} cy={cy2} r={r * 0.42} fill="white" opacity={0.9}/>
                   </g>
@@ -512,16 +483,54 @@ const Board: React.FC<BoardProps> = ({ players, properties, onCellClick, selecte
         })}
 
         {/* Passe 2 : pions (toujours au-dessus de tout) */}
-        {CELLS.map((cell) => {
-          const { cx, cy } = getCellRect(cell.index);
-          const pawns = pawnsByPosition.get(cell.index) ?? [];
-          if (pawns.length === 0) return null;
-          return <PawnCluster key={`pawns-${cell.index}`} pawns={pawns} cx={cx} cy={cy} currentPlayerId={currentPlayerId} />;
-        })}
+        <g pointerEvents="none">
+          {players.map((player) => {
+            const slot = (pawnsByPosition.get(player.position) ?? []).findIndex(p => p.id === player.id)
+            const off = PAWN_OFFSETS[(slot >= 0 ? slot : 0) % PAWN_OFFSETS.length]
+            const from = previousPositionsRef.current[player.id] ?? player.position
+            const pathCells = forwardPath(from, player.position)
+            const xPath = pathCells.map(pos => getCellRect(pos).cx + off.dx)
+            const yPath = pathCells.map(pos => getCellRect(pos).cy + off.dy)
+            const isActive = player.id === currentPlayerId
+            const colorClass = PLAYER_COLOR_CLASS[player.color]
+            const steps = Math.max(1, xPath.length)
+
+            return (
+              <motion.g
+                key={`pawn-${player.id}`}
+                initial={false}
+                animate={{
+                  x: xPath.length > 1 ? xPath : xPath[0],
+                  y: yPath.length > 1 ? yPath : yPath[0],
+                }}
+                transition={{
+                  duration: 0.3 * steps,
+                  ease: 'linear',
+                  times: xPath.length > 1 ? xPath.map((_, i) => i / (xPath.length - 1)) : undefined,
+                }}
+                className={isActive ? 'scale-110 -translate-y-2 drop-shadow-xl transition-all duration-300' : 'transition-all duration-300'}
+              >
+                {isActive && (
+                  <circle cx={0} cy={-9} r="22" className={`${colorClass} opacity-25`} />
+                )}
+                <g filter="url(#drop-shadow)">
+                  <circle cx={0} cy={-9} r={isActive ? 17 : 15}
+                    fill="none" stroke="white" strokeWidth={isActive ? 3 : 1.5} opacity={isActive ? 0.9 : 0.5}/>
+                  <ellipse cx={0} cy={17} rx="16" ry="7" className={`${colorClass} opacity-90`} />
+                  <rect x={-10} y={0} width="20" height="19" rx="3" className={colorClass}/>
+                  <circle cx={0} cy={-9} r={isActive ? 16 : 14} className={colorClass}/>
+                  <circle cx={0} cy={-9} r={isActive ? 16 : 14}
+                    fill="none" stroke={isActive ? 'white' : 'rgba(255,255,255,0.4)'} strokeWidth={isActive ? 2.5 : 1.5}/>
+                  <circle cx={-5} cy={-15} r={isActive ? 6 : 5} fill="white" opacity={isActive ? 0.5 : 0.3}/>
+                </g>
+              </motion.g>
+            )
+          })}
+        </g>
       </svg>
     </div>
   );
 };
 
 export default Board;
-export { CELLS, GROUP_COLORS, PLAYER_COLORS };
+export { CELLS, GROUP_COLORS };

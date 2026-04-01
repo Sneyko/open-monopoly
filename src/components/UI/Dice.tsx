@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useId } from 'react'
+import React, { useEffect, useRef, useState, useId, useCallback } from 'react'
 
 const TURN_TIMEOUT = 30 // secondes avant auto-lancer
 
@@ -30,7 +30,12 @@ function DieFace({
     <div style={{ display: 'inline-block' }}>
       <svg
         width={size} height={size} viewBox="0 0 100 100"
-        style={{ transition: rolling ? 'none' : 'transform 0.3s cubic-bezier(0.34,1.56,0.64,1)', display: 'block' }}
+        style={{
+          transition: rolling ? 'none' : 'transform 0.3s cubic-bezier(0.34,1.56,0.64,1)',
+          animation: rolling ? 'dice-spin 0.8s ease-out' : 'none',
+          transformStyle: 'preserve-3d',
+          display: 'block',
+        }}
       >
         <defs>
           <linearGradient id={gradId} x1="0%" y1="0%" x2="100%" y2="100%">
@@ -59,8 +64,8 @@ export default function Dice({ values, onRoll, isMyTurn, hasRolled, diceSize = 7
   const [display, setDisplay]   = useState<[number, number]>([1, 1])
   const [rolling, setRolling]   = useState(false)
   const prevValuesRef = useRef<string>('')
-  const rafRef        = useRef<number | null>(null)
-  const startRef      = useRef<number>(0)
+  const pendingResultRef = useRef<[number, number] | null>(null)
+  const rollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     if (!values) return
@@ -68,30 +73,33 @@ export default function Dice({ values, onRoll, isMyTurn, hasRolled, diceSize = 7
     if (key === prevValuesRef.current) return
     prevValuesRef.current = key
 
-    if (rafRef.current !== null) cancelAnimationFrame(rafRef.current)
-    const DURATION = 750
-    setRolling(true)
-    startRef.current = performance.now()
-
-    const tick = (now: number) => {
-      const progress = Math.min((now - startRef.current) / DURATION, 1)
-      if (Math.random() < (1 - progress) * 1.5 + 0.05) {
-        setDisplay([
-          Math.ceil(Math.random() * 6) as 1|2|3|4|5|6,
-          Math.ceil(Math.random() * 6) as 1|2|3|4|5|6,
-        ])
-      }
-      if (progress < 1) {
-        rafRef.current = requestAnimationFrame(tick)
-      } else {
-        setDisplay(values)
-        setRolling(false)
-        rafRef.current = null
-      }
+    pendingResultRef.current = values
+    if (!rolling) {
+      setDisplay(values)
     }
-    rafRef.current = requestAnimationFrame(tick)
-    return () => { if (rafRef.current !== null) cancelAnimationFrame(rafRef.current) }
-  }, [values])
+  }, [values, rolling])
+
+  useEffect(() => {
+    return () => {
+      if (rollTimeoutRef.current) clearTimeout(rollTimeoutRef.current)
+    }
+  }, [])
+
+  const triggerRoll = useCallback(() => {
+    if (rolling) return
+
+    setRolling(true)
+    pendingResultRef.current = null
+    onRoll?.()
+
+    if (rollTimeoutRef.current) clearTimeout(rollTimeoutRef.current)
+    rollTimeoutRef.current = setTimeout(() => {
+      const finalValues = pendingResultRef.current ?? values
+      if (finalValues) setDisplay(finalValues)
+      setRolling(false)
+      rollTimeoutRef.current = null
+    }, 800)
+  }, [onRoll, rolling, values])
 
   // ── Timer auto-lancer ─────────────────────────────────────────────────────
   const [timeLeft, setTimeLeft]   = useState(TURN_TIMEOUT)
@@ -113,7 +121,7 @@ export default function Dice({ values, onRoll, isMyTurn, hasRolled, diceSize = 7
         if (prev <= 1) {
           clearInterval(timerRef.current!)
           timerRef.current = null
-          onRoll?.()
+          triggerRoll()
           return 0
         }
         return prev - 1
@@ -121,7 +129,7 @@ export default function Dice({ values, onRoll, isMyTurn, hasRolled, diceSize = 7
     }, 1000)
 
     return () => { if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null } }
-  }, [shouldRun])   // eslint-disable-line react-hooks/exhaustive-deps
+  }, [shouldRun, triggerRoll])
 
   const total    = values ? values[0] + values[1] : null
   const isDouble = values ? values[0] === values[1] : false
@@ -184,7 +192,7 @@ export default function Dice({ values, onRoll, isMyTurn, hasRolled, diceSize = 7
       {/* Bouton lancer */}
       {shouldRun && (
         <button
-          onClick={onRoll}
+          onClick={triggerRoll}
           className="my-turn-glow mt-1 w-full bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-400 hover:to-green-500 text-white font-bold py-3 px-6 rounded-xl text-base transition-all active:scale-95 shadow-lg"
         >
           🎲 Lancer les dés
