@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useMemo } from 'react'
 import Board from './Board/Board'
 import Dice from './UI/Dice'
 import PlayerCard from './UI/PlayerCard'
@@ -44,6 +44,41 @@ const DETAIL_POSITIONS: React.CSSProperties[] = [
   { top: 'calc(35% + 128px)', right: 4 },       // 5: sous centre-droit
 ]
 
+interface AssetMeta {
+  price: number
+  mortgage: number
+  houseCost?: number
+}
+
+const ASSET_VALUES: Record<number, AssetMeta> = {
+  1: { price: 60, mortgage: 30, houseCost: 50 },
+  3: { price: 60, mortgage: 30, houseCost: 50 },
+  5: { price: 200, mortgage: 100 },
+  6: { price: 100, mortgage: 50, houseCost: 50 },
+  8: { price: 100, mortgage: 50, houseCost: 50 },
+  9: { price: 120, mortgage: 60, houseCost: 50 },
+  11: { price: 140, mortgage: 70, houseCost: 100 },
+  13: { price: 140, mortgage: 70, houseCost: 100 },
+  14: { price: 160, mortgage: 80, houseCost: 100 },
+  15: { price: 200, mortgage: 100 },
+  16: { price: 180, mortgage: 90, houseCost: 100 },
+  18: { price: 180, mortgage: 90, houseCost: 100 },
+  19: { price: 200, mortgage: 100, houseCost: 100 },
+  21: { price: 220, mortgage: 110, houseCost: 150 },
+  23: { price: 220, mortgage: 110, houseCost: 150 },
+  24: { price: 240, mortgage: 120, houseCost: 150 },
+  25: { price: 200, mortgage: 100 },
+  26: { price: 260, mortgage: 130, houseCost: 150 },
+  27: { price: 260, mortgage: 130, houseCost: 150 },
+  29: { price: 280, mortgage: 140, houseCost: 150 },
+  31: { price: 300, mortgage: 150, houseCost: 200 },
+  32: { price: 300, mortgage: 150, houseCost: 200 },
+  34: { price: 320, mortgage: 160, houseCost: 200 },
+  35: { price: 200, mortgage: 100 },
+  37: { price: 350, mortgage: 175, houseCost: 200 },
+  39: { price: 400, mortgage: 200, houseCost: 200 },
+}
+
 export default function GameView() {
   const {
     gameState, myPlayerId, isMyTurn,
@@ -61,8 +96,11 @@ export default function GameView() {
   const [boardRotation, setBoardRotation] = useState(0)
   const [shownCard, setShownCard] = useState<{ deck: 'chance'|'community'; text: string; image: string } | undefined>(undefined)
   const [showKarimTdAnim, setShowKarimTdAnim] = useState(false)
+  const [billAnimLabel, setBillAnimLabel] = useState<string | null>(null)
+  const [showRanking, setShowRanking] = useState(false)
   const prevCardRef = useRef<string | undefined>(undefined)
   const prevTdTriggerRef = useRef<string | undefined>(undefined)
+  const prevBillTriggerRef = useRef<string | undefined>(undefined)
 
   const animatedPlayers = useAnimatedPlayers(gameState?.players ?? [])
 
@@ -101,6 +139,23 @@ export default function GameView() {
     return () => window.clearTimeout(timer)
   }, [gameState?.log])
 
+  useEffect(() => {
+    if (!gameState?.log?.length) return
+    const lastEvent = gameState.log[gameState.log.length - 1]
+    if (prevBillTriggerRef.current === lastEvent.id) return
+
+    const bills = ['Facture Fibre', 'Tisséo Pastel', 'Gemini Mensuel', 'Frais de scolarité']
+    const matched = bills.find(label =>
+      lastEvent.message.includes('paye') && lastEvent.message.includes(`sur ${label}`)
+    )
+    if (!matched) return
+
+    prevBillTriggerRef.current = lastEvent.id
+    setBillAnimLabel(matched)
+    const timer = window.setTimeout(() => setBillAnimLabel(null), 1700)
+    return () => window.clearTimeout(timer)
+  }, [gameState?.log])
+
   if (!gameState) return null
 
   const me = gameState.players.find(p => p.id === myPlayerId)
@@ -113,6 +168,41 @@ export default function GameView() {
   const meInJail = me?.inJail ?? false
   const hasRolled = !canRollNow
   const canEndTurn = isMyTurn && !me?.isBankrupt && !!gameState.lastDice && !gameState.awaitingParkingChoice && !gameState.awaitingPropertyDecision && !lastWasDouble
+
+  const ranking = useMemo(() => {
+    const byOwner = new Map<string, typeof gameState.properties>()
+    for (const prop of gameState.properties) {
+      if (!prop.ownerId) continue
+      const arr = byOwner.get(prop.ownerId) ?? []
+      arr.push(prop)
+      byOwner.set(prop.ownerId, arr)
+    }
+
+    return gameState.players
+      .map(player => {
+        const owned = byOwner.get(player.id) ?? []
+        const assets = owned.reduce((sum, prop) => {
+          const meta = ASSET_VALUES[prop.id]
+          if (!meta) return sum
+
+          const baseValue = prop.mortgaged ? meta.mortgage : meta.price
+          const houseCost = meta.houseCost ?? 0
+          const buildingsValue = prop.mortgaged
+            ? 0
+            : (prop.hotel ? houseCost * 5 : prop.houses * houseCost)
+
+          return sum + baseValue + buildingsValue
+        }, 0)
+
+        return {
+          player,
+          wealth: player.money + assets,
+          assets,
+          propertiesCount: owned.length,
+        }
+      })
+      .sort((a, b) => b.wealth - a.wealth)
+  }, [gameState.players, gameState.properties])
 
   if (gameState.phase === 'ended') {
     const winner = gameState.players.find(p => !p.isBankrupt)
@@ -136,6 +226,32 @@ export default function GameView() {
   return (
     // Écran complet — le plateau est centré, les cartes joueurs aux coins de l'écran
     <div className="h-screen w-screen bg-[#0f1117] relative overflow-hidden">
+
+      {/* ── Classement patrimoine (plié par défaut) ── */}
+      <div className="absolute top-3 left-1/2 -translate-x-1/2 z-40 pointer-events-auto">
+        <div className="bg-black/65 backdrop-blur-md border border-white/12 rounded-xl shadow-xl overflow-hidden min-w-[220px]">
+          <button
+            onClick={() => setShowRanking(v => !v)}
+            className="w-full px-3 py-2 flex items-center justify-between text-left hover:bg-white/5 transition-colors"
+          >
+            <span className="text-[11px] font-semibold text-white/85 uppercase tracking-wider">Classement patrimoine</span>
+            <span className="text-xs text-white/60">{showRanking ? '▲' : '▼'}</span>
+          </button>
+
+          {showRanking && (
+            <div className="px-2 pb-2 space-y-1.5 fade-in-up">
+              {ranking.map((entry, index) => (
+                <div key={entry.player.id} className="bg-white/5 border border-white/8 rounded-lg px-2 py-1.5 flex items-center gap-2">
+                  <span className="w-5 text-center text-[11px] font-bold text-white/70">#{index + 1}</span>
+                  <span className="w-2 h-2 rounded-full" style={{ backgroundColor: COLOR_HEX[entry.player.color] ?? '#888' }} />
+                  <span className="text-xs text-white/85 truncate max-w-[95px]">{entry.player.name}</span>
+                  <span className="ml-auto text-xs font-bold text-emerald-300">{entry.wealth.toLocaleString()} €</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
 
       {/* ── Plateau : centré, pleine taille min(100vh, 100vw) ── */}
       <div
@@ -385,6 +501,15 @@ export default function GameView() {
         <div className="karim-td-overlay pointer-events-none">
           <img src={karimEnerveSrc} alt="Karim énervé" className="karim-td-image" />
           <div className="karim-td-text">Direction TD</div>
+        </div>
+      )}
+
+      {/* ── Animation Facture / Taxe ── */}
+      {billAnimLabel && (
+        <div className="bill-overlay pointer-events-none">
+          <div className="bill-chip">FACTURE</div>
+          <div className="bill-title">{billAnimLabel}</div>
+          <div className="bill-subtitle">Paiement en cours</div>
         </div>
       )}
     </div>
