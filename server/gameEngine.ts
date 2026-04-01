@@ -741,7 +741,7 @@ export function chooseParkingBoost(
   }
 
   const cell = getCellDef(propertyId)
-  let s = transferMoney(state, playerId, 'bank', 200)
+  let s: GameState = transferMoney(state, playerId, 'bank', 200)
   s = { ...s, freeParkingBoost: { playerId, propertyId }, awaitingParkingChoice: false }
   s = log(s, `${player.name} paie 200 € et booste le loyer de ${cell.name} ×3 !`, playerId)
   s = nextPlayer(s)
@@ -756,7 +756,7 @@ export function declineParkingBoost(
   if (!state.awaitingParkingChoice) return { success: false, error: 'Pas de choix en attente.', state }
 
   const player = state.players.find(p => p.id === playerId)!
-  let s = { ...state, awaitingParkingChoice: false }
+  let s: GameState = { ...state, awaitingParkingChoice: false }
   s = log(s, `${player.name} passe son tour au Jardin Japonais sans booster.`, playerId)
   s = nextPlayer(s)
   return { success: true, state: s }
