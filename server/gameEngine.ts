@@ -582,7 +582,7 @@ function applyCellEffect(state: GameState, playerId: string, position: number, d
     case 'tax': {
       const amount = cell.tax ?? 0
       s = transferMoney(s, playerId, 'bank', amount)
-      s = log(s, `${player.name} paye ${amount} € d'impôts.`, playerId)
+      s = log(s, `${player.name} paye ${amount} € sur ${cell.name}.`, playerId)
       s = finishTurnAfterAction(s, keepTurnOnDouble)
       break
     }
@@ -646,6 +646,13 @@ function applyCellEffect(state: GameState, playerId: string, position: number, d
       if (!prop) { s = finishTurnAfterAction(s, keepTurnOnDouble); break }
 
       if (!prop.ownerId) {
+        const price = cell.price ?? 0
+        if (player.money < price) {
+          s = log(s, `${player.name} tombe sur ${cell.name} (${price} €) : argent insuffisant. Tour suivant.`, playerId)
+          s = nextPlayer(s)
+          break
+        }
+
         // Proposer l'achat — l'état reste en attente de buy_property ou decline_property
         s = { ...s, awaitingPropertyDecision: true }
         s = log(s, `${player.name} s'arrête sur ${cell.name} (${cell.price} €). Achat possible.`, playerId)

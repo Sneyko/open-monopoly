@@ -50,15 +50,15 @@
 
 ---
 
-## 💡 Services Publics
-* Tisséo Pastel - 150€
-* Facture Fibre - 150€
+## 💡 Services Publics (s'achète pas)
+* Tisséo Pastel - -150€
+* Facture Fibre - -150€
 
 ---
 
-## 💸 Taxes et Frais
-* Gemini Mensuel - 200€
-* Frais de scolarité - 100€
+## 💸 Taxes et Frais (s'achète pas)
+* Gemini Mensuel - -200€
+* Frais de scolarité - -100€ 
 
 ---
 

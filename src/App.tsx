@@ -6,6 +6,7 @@ import CreateRoom from './components/Lobby/CreateRoom'
 import JoinRoom from './components/Lobby/JoinRoom'
 import WaitingRoom from './components/Lobby/WaitingRoom'
 import GameView from './components/GameView'
+import logoSrc from './assets/logo.svg'
 
 type Screen = 'home' | 'create' | 'join' | 'waiting' | 'playing'
 
@@ -81,7 +82,7 @@ export default function App() {
 
         {/* Logo */}
         <div className="text-center mb-10">
-          <div className="text-7xl mb-3 select-none">🎩</div>
+          <img src={logoSrc} alt="Logo Puceaupoly" className="w-20 h-20 mx-auto mb-3 select-none" />
           <h1 className="text-4xl font-black tracking-tight text-white mb-1">
             Puceaupoly
           </h1>

@@ -1,6 +1,7 @@
 import React from 'react'
 import type { RoomInfo } from '../../../shared/types'
 import { useSocket } from '../../hooks/useSocket'
+import logoSrc from '../../assets/logo.svg'
 
 const COLOR_HEX: Record<string, string> = {
   red: '#ef4444', blue: '#3b82f6', green: '#22c55e',
@@ -20,7 +21,7 @@ export default function WaitingRoom({ room, myPlayerId }: WaitingRoomProps) {
   return (
     <div className="w-full max-w-sm fade-in-up">
       <div className="text-center mb-8">
-        <div className="text-5xl mb-3">🎩</div>
+        <img src={logoSrc} alt="Logo Puceaupoly" className="w-16 h-16 mx-auto mb-3 select-none" />
         <h2 className="text-2xl font-black text-white mb-1">Salle d'attente</h2>
         <p className="text-white/30 text-sm">Partagez le code avec vos amis</p>
       </div>
