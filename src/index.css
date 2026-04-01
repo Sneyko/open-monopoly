@@ -100,6 +100,64 @@ body {
   animation: karim-td-text-in 1.7s ease-out forwards;
 }
 
+/* ── Animation Facture / Taxe ── */
+@keyframes bill-overlay-in {
+  0% { opacity: 0; }
+  20% { opacity: 1; }
+  80% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+@keyframes bill-card-in {
+  0% { transform: translateY(22px) scale(0.92); opacity: 0; filter: blur(2px); }
+  22% { transform: translateY(0) scale(1); opacity: 1; filter: blur(0); }
+  75% { transform: translateY(0) scale(1.02); opacity: 1; }
+  100% { transform: translateY(-10px) scale(0.98); opacity: 0; }
+}
+
+.bill-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 55;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: radial-gradient(circle at center, rgba(37, 99, 235, 0.18), rgba(0, 0, 0, 0.52));
+  animation: bill-overlay-in 1.7s ease-out forwards;
+}
+
+.bill-chip {
+  padding: 4px 10px;
+  border-radius: 9999px;
+  background: rgba(251, 191, 36, 0.16);
+  border: 1px solid rgba(251, 191, 36, 0.55);
+  color: #fcd34d;
+  letter-spacing: 0.08em;
+  font-size: 11px;
+  font-weight: 700;
+  animation: bill-card-in 1.7s ease-out forwards;
+}
+
+.bill-title {
+  color: #e0ecff;
+  font-weight: 900;
+  font-size: clamp(22px, 3.8vw, 42px);
+  letter-spacing: 0.02em;
+  text-shadow: 0 10px 30px rgba(0, 0, 0, 0.55);
+  animation: bill-card-in 1.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.bill-subtitle {
+  color: #bfdbfe;
+  font-size: clamp(12px, 1.8vw, 16px);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  opacity: 0.9;
+  animation: bill-card-in 1.7s ease-out forwards;
+}
+
 /* ── Scrollbar ── */
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
