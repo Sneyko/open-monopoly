@@ -664,6 +664,7 @@ export function buyProperty(
   playerId: string,
 ): { success: boolean; error?: string; state: GameState } {
   if (state.currentPlayerId !== playerId) return { success: false, error: 'Ce n\'est pas votre tour.', state }
+  if (!state.lastDice) return { success: false, error: 'Vous devez lancer les dés d\'abord.', state }
 
   const player = state.players.find(p => p.id === playerId)!
   const cell = getCellDef(player.position)
