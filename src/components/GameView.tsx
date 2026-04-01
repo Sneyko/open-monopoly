@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react'
 import Board from './Board/Board'
 import Dice from './UI/Dice'
 import PlayerCard from './UI/PlayerCard'
+import PlayerDetailPanel from './UI/PlayerDetailPanel'
 import GameLog from './UI/GameLog'
 import TradeModal from './UI/TradeModal'
 import CellInfoPanel from './UI/CellInfoPanel'
@@ -31,6 +32,17 @@ const SCREEN_CORNERS: React.CSSProperties[] = [
   { top: '35%', right: 4 },  // 5: droite-centre (6e joueur)
 ]
 
+// Positions du panel de détail — apparaît juste sous/au-dessus de la carte joueur
+// La carte corner fait ~120px de haut + 4px d'offset + 8px de gap = 132px
+const DETAIL_POSITIONS: React.CSSProperties[] = [
+  { top: 132, left: 4 },                        // 0: sous haut-gauche
+  { top: 132, right: 4 },                       // 1: sous haut-droit
+  { bottom: 132, left: 4 },                     // 2: au-dessus bas-gauche
+  { bottom: 132, right: 4 },                    // 3: au-dessus bas-droit
+  { top: 'calc(35% + 128px)', left: 4 },        // 4: sous centre-gauche
+  { top: 'calc(35% + 128px)', right: 4 },       // 5: sous centre-droit
+]
+
 export default function GameView() {
   const {
     gameState, myPlayerId, isMyTurn,
@@ -44,6 +56,7 @@ export default function GameView() {
   const [showTrade, setShowTrade] = useState(false)
   const [showLog, setShowLog] = useState(false)
   const [selectedCell, setSelectedCell] = useState<number | null>(null)
+  const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null)
   const [boardRotation, setBoardRotation] = useState(0)
   const [shownCard, setShownCard] = useState<{ deck: 'chance'|'community'; text: string; image: string } | undefined>(undefined)
   const prevCardRef = useRef<string | undefined>(undefined)
@@ -277,13 +290,18 @@ export default function GameView() {
           style={SCREEN_CORNERS[i] ?? SCREEN_CORNERS[3]}
         >
           <div className="relative">
-            <PlayerCard
-              player={player}
-              properties={gameState.properties}
-              isCurrentTurn={player.id === gameState.currentPlayerId}
-              isMe={player.id === myPlayerId}
-              corner
-            />
+            <div
+              className="cursor-pointer"
+              onClick={() => setSelectedPlayerId(prev => prev === player.id ? null : player.id)}
+            >
+              <PlayerCard
+                player={player}
+                properties={gameState.properties}
+                isCurrentTurn={player.id === gameState.currentPlayerId}
+                isMe={player.id === myPlayerId}
+                corner
+              />
+            </div>
             {isHost && !player.isConnected && player.id !== myPlayerId && (
               <button
                 onClick={() => socket.emit('kick_player', { targetPlayerId: player.id })}
@@ -296,6 +314,21 @@ export default function GameView() {
           </div>
         </div>
       ))}
+
+      {/* ── Panel détail joueur ── */}
+      {selectedPlayerId && (() => {
+        const idx = gameState.players.findIndex(p => p.id === selectedPlayerId)
+        const player = gameState.players[idx]
+        if (!player) return null
+        return (
+          <PlayerDetailPanel
+            player={player}
+            properties={gameState.properties}
+            style={DETAIL_POSITIONS[idx] ?? DETAIL_POSITIONS[3]}
+            onClose={() => setSelectedPlayerId(null)}
+          />
+        )
+      })()}
 
       {/* ── Modale carte Chance / IZLY ── */}
       {shownCard && (
