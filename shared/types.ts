@@ -93,6 +93,7 @@ export interface GameState {
   auctionState?: AuctionState
   freeParkingBoost?: FreeParkingBoost   // propriété dont le loyer est ×3
   awaitingParkingChoice?: boolean       // joueur actuel doit choisir s'il booste
+  awaitingPropertyDecision?: boolean    // joueur actuel doit acheter ou refuser la propriété
 }
 
 export interface AuctionState {

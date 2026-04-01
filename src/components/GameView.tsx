@@ -67,7 +67,7 @@ export default function GameView() {
   const myPosition = gameState?.players.find(p => p.id === myPlayerId)?.position
   useEffect(() => {
     if (myPosition == null) return
-    const rawTarget = myPosition <= 9 ? 0 : myPosition <= 19 ? 90 : myPosition <= 29 ? 180 : 270
+    const rawTarget = myPosition <= 9 ? 0 : myPosition <= 19 ? 270 : myPosition <= 29 ? 180 : 90
     setBoardRotation(prev => {
       const normalized = ((prev % 360) + 360) % 360
       let diff = rawTarget - normalized
@@ -91,9 +91,13 @@ export default function GameView() {
   const me = gameState.players.find(p => p.id === myPlayerId)
   const currentPlayer = gameState.players.find(p => p.id === gameState.currentPlayerId)
   const cellAtMyPosition = gameState.properties.find(p => p.id === (me?.position ?? -1))
-  const canBuy = isMyTurn && gameState.lastDice != null && !!cellAtMyPosition && !cellAtMyPosition.ownerId
+  const lastWasDouble = !!gameState.lastDice && gameState.lastDice[0] === gameState.lastDice[1]
+  const hasPendingTurnResolution = !!gameState.awaitingParkingChoice || !!gameState.awaitingPropertyDecision || !!gameState.auctionState
+  const canRollNow = isMyTurn && !me?.isBankrupt && (!gameState.lastDice || (lastWasDouble && !hasPendingTurnResolution))
+  const canBuy = isMyTurn && !!gameState.awaitingPropertyDecision && !!cellAtMyPosition && !cellAtMyPosition.ownerId
   const meInJail = me?.inJail ?? false
-  const hasRolled = !isMyTurn || (gameState.lastDice != null && gameState.doublesCount === 0)
+  const hasRolled = !canRollNow
+  const canEndTurn = isMyTurn && !me?.isBankrupt && !!gameState.lastDice && !gameState.awaitingParkingChoice && !gameState.awaitingPropertyDecision && !gameState.auctionState && !lastWasDouble
 
   if (gameState.phase === 'ended') {
     const winner = gameState.players.find(p => !p.isBankrupt)
@@ -237,7 +241,7 @@ export default function GameView() {
             )}
 
             {/* Fin de tour + actions secondaires */}
-            {isMyTurn && !me?.isBankrupt && (
+            {canEndTurn && (
               <div className="w-full space-y-1">
                 <button onClick={endTurn}
                   className="w-full bg-white/8 hover:bg-white/14 border border-white/12 text-white/80 py-2 rounded-xl text-xs font-semibold transition-all">

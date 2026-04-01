@@ -83,7 +83,7 @@ export default function App() {
         <div className="text-center mb-10">
           <div className="text-7xl mb-3 select-none">🎩</div>
           <h1 className="text-4xl font-black tracking-tight text-white mb-1">
-            Free Monopoly
+            Puceaupoly
           </h1>
           <p className="text-white/30 text-sm">Open-source · Multijoueur · En ligne</p>
           <div className={`mt-3 text-xs inline-flex items-center gap-1.5 px-3 py-1 rounded-full border

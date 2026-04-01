@@ -263,7 +263,17 @@ function nextPlayer(state: GameState): GameState {
     turn: state.turn + 1,
     lastDice: undefined,         // réinitialise pour que le prochain joueur puisse lancer
     awaitingParkingChoice: false, // toujours effacer entre les tours
+    awaitingPropertyDecision: false,
   }
+}
+
+function lastRollWasDouble(state: GameState): boolean {
+  return !!state.lastDice && state.lastDice[0] === state.lastDice[1]
+}
+
+function finishTurnAfterAction(state: GameState, keepTurnOnDouble: boolean): GameState {
+  if (keepTurnOnDouble && lastRollWasDouble(state)) return state
+  return nextPlayer(state)
 }
 
 function drawCard(state: GameState, deck: 'chance' | 'community'): { state: GameState; card: Card } {
@@ -477,6 +487,12 @@ export function rollDice(
 ): { success: boolean; error?: string; state: GameState } {
   if (state.phase !== 'playing') return { success: false, error: 'La partie n\'est pas en cours.', state }
   if (state.currentPlayerId !== playerId) return { success: false, error: 'Ce n\'est pas votre tour.', state }
+  if (state.awaitingParkingChoice) return { success: false, error: 'Vous devez d\'abord faire votre choix au Jardin Japonais.', state }
+  if (state.awaitingPropertyDecision) return { success: false, error: 'Vous devez d\'abord acheter ou refuser la propriété.', state }
+  if (state.auctionState) return { success: false, error: 'Une enchère est en cours.', state }
+  if (state.lastDice && !lastRollWasDouble(state)) {
+    return { success: false, error: 'Vous avez déjà lancé les dés ce tour-ci.', state }
+  }
 
   const die1 = rollDie()
   const die2 = rollDie()
@@ -491,12 +507,13 @@ export function rollDice(
   // Gestion du TD
   if (player.inJail) {
     if (isDouble) {
+      const newDoubles = s.doublesCount + 1
       s = {
         ...s,
         players: s.players.map(p =>
           p.id === playerId ? { ...p, inJail: false, jailTurns: 0 } : p
         ),
-        doublesCount: 0, // sort du TD avec double mais ne rejoue pas
+        doublesCount: newDoubles,
       }
       s = log(s, `${player.name} sort du TD avec un double !`, playerId)
     } else {
@@ -522,6 +539,7 @@ export function rollDice(
         s = nextPlayer(s)
         return { success: true, state: s }
       }
+      s = { ...s, doublesCount: 0 }
     }
   } else {
     // Gestion des doubles hors TD
@@ -529,25 +547,29 @@ export function rollDice(
       const newDoubles = s.doublesCount + 1
       if (newDoubles >= 3) {
         s = goToJail(s, playerId)
+        s = nextPlayer(s)
         return { success: true, state: s }
       }
       s = { ...s, doublesCount: newDoubles }
+    } else {
+      s = { ...s, doublesCount: 0 }
     }
   }
 
   // Déplacement
-  const newPosition = (player.position + total) % 40
-  const passedGo = !player.inJail && (player.position + total) >= 40
+  const movedPlayer = s.players.find(p => p.id === playerId)!
+  const newPosition = (movedPlayer.position + total) % 40
+  const passedGo = !movedPlayer.inJail && (movedPlayer.position + total) >= 40
 
   s = movePlayer(s, playerId, newPosition, passedGo)
 
   // Appliquer les effets de la case
-  s = applyCellEffect(s, playerId, newPosition, total)
+  s = applyCellEffect(s, playerId, newPosition, total, isDouble)
 
   return { success: true, state: s }
 }
 
-function applyCellEffect(state: GameState, playerId: string, position: number, diceTotal: number): GameState {
+function applyCellEffect(state: GameState, playerId: string, position: number, diceTotal: number, keepTurnOnDouble: boolean): GameState {
   const cell = getCellDef(position)
   const player = state.players.find(p => p.id === playerId)!
   let s = state
@@ -561,7 +583,7 @@ function applyCellEffect(state: GameState, playerId: string, position: number, d
       const amount = cell.tax ?? 0
       s = transferMoney(s, playerId, 'bank', amount)
       s = log(s, `${player.name} paye ${amount} € d'impôts.`, playerId)
-      s = nextPlayer(s)
+      s = finishTurnAfterAction(s, keepTurnOnDouble)
       break
     }
 
@@ -574,7 +596,7 @@ function applyCellEffect(state: GameState, playerId: string, position: number, d
     case 'jail':
       // Simple visite — pas en TD, fin de tour normale
       s = log(s, `${player.name} est en simple visite au TD.`, playerId)
-      s = nextPlayer(s)
+      s = finishTurnAfterAction(s, keepTurnOnDouble)
       break
 
     case 'free-parking': {
@@ -592,7 +614,7 @@ function applyCellEffect(state: GameState, playerId: string, position: number, d
         // Ne pas appeler nextPlayer — attend choose_parking_boost ou decline_parking_boost
       } else {
         s = log(s, `${player.name} se repose au Jardin Japonais (aucune propriété à booster).`, playerId)
-        s = nextPlayer(s)
+        s = finishTurnAfterAction(s, keepTurnOnDouble)
       }
       break
     }
@@ -602,7 +624,8 @@ function applyCellEffect(state: GameState, playerId: string, position: number, d
       s = { ...s2, lastCard: { deck: 'chance', text: card.text, image: card.image } }
       s = log(s, `${player.name} tire une carte Chance : "${card.text}"`, playerId)
       s = applyCardAction(s, playerId, card.action, diceTotal)
-      if (card.action.type !== 'go_to_jail') s = nextPlayer(s)
+      if (card.action.type === 'go_to_jail') s = nextPlayer(s)
+      else s = finishTurnAfterAction(s, keepTurnOnDouble)
       break
     }
 
@@ -611,7 +634,8 @@ function applyCellEffect(state: GameState, playerId: string, position: number, d
       s = { ...s2, lastCard: { deck: 'community', text: card.text, image: card.image } }
       s = log(s, `${player.name} tire une carte IZLY : "${card.text}"`, playerId)
       s = applyCardAction(s, playerId, card.action, diceTotal)
-      if (card.action.type !== 'go_to_jail') s = nextPlayer(s)
+      if (card.action.type === 'go_to_jail') s = nextPlayer(s)
+      else s = finishTurnAfterAction(s, keepTurnOnDouble)
       break
     }
 
@@ -619,10 +643,11 @@ function applyCellEffect(state: GameState, playerId: string, position: number, d
     case 'railroad':
     case 'utility': {
       const prop = s.properties.find(p => p.id === position)
-      if (!prop) { s = nextPlayer(s); break }
+      if (!prop) { s = finishTurnAfterAction(s, keepTurnOnDouble); break }
 
       if (!prop.ownerId) {
         // Proposer l'achat — l'état reste en attente de buy_property ou decline_property
+        s = { ...s, awaitingPropertyDecision: true }
         s = log(s, `${player.name} s'arrête sur ${cell.name} (${cell.price} €). Achat possible.`, playerId)
         // Ne pas appeler nextPlayer — le joueur doit décider
         break
@@ -630,13 +655,13 @@ function applyCellEffect(state: GameState, playerId: string, position: number, d
 
       if (prop.ownerId === playerId) {
         s = log(s, `${player.name} s'arrête sur sa propre propriété ${cell.name}.`, playerId)
-        s = nextPlayer(s)
+        s = finishTurnAfterAction(s, keepTurnOnDouble)
         break
       }
 
       if (prop.mortgaged) {
         s = log(s, `${cell.name} est hypothéquée, pas de loyer.`, playerId)
-        s = nextPlayer(s)
+        s = finishTurnAfterAction(s, keepTurnOnDouble)
         break
       }
 
@@ -645,12 +670,12 @@ function applyCellEffect(state: GameState, playerId: string, position: number, d
       const owner = s.players.find(p => p.id === prop.ownerId)!
       s = log(s, `${player.name} paye ${rent} € de loyer à ${owner.name} pour ${cell.name}.`, playerId)
       s = checkBankruptcy(s, playerId)
-      if (!s.players.find(p => p.id === playerId)?.isBankrupt) s = nextPlayer(s)
+      if (!s.players.find(p => p.id === playerId)?.isBankrupt) s = finishTurnAfterAction(s, keepTurnOnDouble)
       break
     }
 
     default:
-      s = nextPlayer(s)
+      s = finishTurnAfterAction(s, keepTurnOnDouble)
   }
 
   return s
@@ -662,6 +687,7 @@ export function buyProperty(
 ): { success: boolean; error?: string; state: GameState } {
   if (state.currentPlayerId !== playerId) return { success: false, error: 'Ce n\'est pas votre tour.', state }
   if (!state.lastDice) return { success: false, error: 'Vous devez lancer les dés d\'abord.', state }
+  if (!state.awaitingPropertyDecision) return { success: false, error: 'Aucun achat en attente.', state }
 
   const player = state.players.find(p => p.id === playerId)!
   const cell = getCellDef(player.position)
@@ -682,9 +708,10 @@ export function buyProperty(
     properties: s.properties.map(p =>
       p.id === player.position ? { ...p, ownerId: playerId } : p
     ),
+    awaitingPropertyDecision: false,
   }
   s = log(s, `${player.name} achète ${cell.name} pour ${price} €.`, playerId)
-  s = nextPlayer(s)
+  s = finishTurnAfterAction(s, true)
 
   return { success: true, state: s }
 }
@@ -694,6 +721,7 @@ export function declineProperty(
   playerId: string,
 ): { success: boolean; error?: string; state: GameState } {
   if (state.currentPlayerId !== playerId) return { success: false, error: 'Ce n\'est pas votre tour.', state }
+  if (!state.awaitingPropertyDecision) return { success: false, error: 'Aucune décision d\'achat en attente.', state }
 
   const player = state.players.find(p => p.id === playerId)!
   const cell = getCellDef(player.position)
@@ -709,6 +737,7 @@ export function declineProperty(
       currentBidderId: '',
       participants: activePlayers.map(p => p.id),
     },
+    awaitingPropertyDecision: false,
   }
 
   return { success: true, state: s }
@@ -741,7 +770,7 @@ export function chooseParkingBoost(
   let s: GameState = transferMoney(state, playerId, 'bank', 200)
   s = { ...s, freeParkingBoost: { playerId, propertyId }, awaitingParkingChoice: false }
   s = log(s, `${player.name} paie 200 € et booste le loyer de ${cell.name} ×3 !`, playerId)
-  s = nextPlayer(s)
+  s = finishTurnAfterAction(s, true)
   return { success: true, state: s }
 }
 
@@ -755,7 +784,7 @@ export function declineParkingBoost(
   const player = state.players.find(p => p.id === playerId)!
   let s: GameState = { ...state, awaitingParkingChoice: false }
   s = log(s, `${player.name} passe son tour au Jardin Japonais sans booster.`, playerId)
-  s = nextPlayer(s)
+  s = finishTurnAfterAction(s, true)
   return { success: true, state: s }
 }
 
@@ -818,7 +847,7 @@ export function auctionPass(
       s = { ...s, auctionState: undefined }
       s = log(s, `L'enchère pour ${cell.name} n'a pas trouvé preneur.`)
     }
-    s = nextPlayer(s)
+    s = finishTurnAfterAction(s, true)
   } else {
     s = {
       ...s,
@@ -1125,7 +1154,11 @@ export function endTurn(
   playerId: string,
 ): { success: boolean; error?: string; state: GameState } {
   if (state.currentPlayerId !== playerId) return { success: false, error: 'Ce n\'est pas votre tour.', state }
+  if (!state.lastDice) return { success: false, error: 'Vous devez d\'abord lancer les dés.', state }
   if (state.awaitingParkingChoice) return { success: false, error: 'Vous devez d\'abord choisir pour le Jardin Japonais.', state }
+  if (state.awaitingPropertyDecision) return { success: false, error: 'Vous devez d\'abord décider pour la propriété en attente.', state }
+  if (state.auctionState) return { success: false, error: 'Impossible de finir le tour pendant une enchère.', state }
+  if (lastRollWasDouble(state)) return { success: false, error: 'Vous avez fait un double, vous devez relancer les dés.', state }
 
   let s = nextPlayer(state)
   return { success: true, state: s }
