@@ -588,6 +588,7 @@ function applyCellEffect(state: GameState, playerId: string, position: number, d
     }
 
     case 'go-to-jail':
+      s = log(s, `${player.name} tombe sur Allez en TD !`, playerId)
       s = goToJail(s, playerId)
       // Pas de fin de tour automatique — le prochain joueur joue
       s = nextPlayer(s)

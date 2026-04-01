@@ -14,6 +14,7 @@ import { useSocket } from '../hooks/useSocket'
 import { useAnimatedPlayers } from '../hooks/useAnimatedPlayers'
 import { useRoomStore } from '../store/roomStore'
 import type { TradeOffer } from '../../shared/types'
+import karimEnerveSrc from '../assets/karim-enerve.svg'
 
 const COLOR_HEX: Record<string, string> = {
   red: '#ef4444', blue: '#3b82f6', green: '#22c55e',
@@ -59,7 +60,9 @@ export default function GameView() {
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null)
   const [boardRotation, setBoardRotation] = useState(0)
   const [shownCard, setShownCard] = useState<{ deck: 'chance'|'community'; text: string; image: string } | undefined>(undefined)
+  const [showKarimTdAnim, setShowKarimTdAnim] = useState(false)
   const prevCardRef = useRef<string | undefined>(undefined)
+  const prevTdTriggerRef = useRef<string | undefined>(undefined)
 
   const animatedPlayers = useAnimatedPlayers(gameState?.players ?? [])
 
@@ -85,6 +88,18 @@ export default function GameView() {
       setShownCard(gameState.lastCard)
     }
   }, [gameState?.lastCard])
+
+  useEffect(() => {
+    if (!gameState?.log?.length) return
+    const lastEvent = gameState.log[gameState.log.length - 1]
+    if (!lastEvent.message.includes('tombe sur Allez en TD')) return
+    if (prevTdTriggerRef.current === lastEvent.id) return
+
+    prevTdTriggerRef.current = lastEvent.id
+    setShowKarimTdAnim(true)
+    const timer = window.setTimeout(() => setShowKarimTdAnim(false), 1700)
+    return () => window.clearTimeout(timer)
+  }, [gameState?.log])
 
   if (!gameState) return null
 
@@ -363,6 +378,14 @@ export default function GameView() {
           onRefuse={(id: string) => socket.emit('refuse_trade', { tradeId: id })}
           onClose={() => setShowTrade(false)}
         />
+      )}
+
+      {/* ── Animation Allez en TD ── */}
+      {showKarimTdAnim && (
+        <div className="karim-td-overlay pointer-events-none">
+          <img src={karimEnerveSrc} alt="Karim énervé" className="karim-td-image" />
+          <div className="karim-td-text">Direction TD</div>
+        </div>
       )}
     </div>
   )
