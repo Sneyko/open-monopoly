@@ -63,6 +63,20 @@ export default function GameView() {
 
   const animatedPlayers = useAnimatedPlayers(gameState?.players ?? [])
 
+  // ── Auto-rotation : la rangée du pion du joueur reste toujours en bas ──
+  const myPosition = gameState?.players.find(p => p.id === myPlayerId)?.position
+  useEffect(() => {
+    if (myPosition == null) return
+    const rawTarget = myPosition <= 9 ? 0 : myPosition <= 19 ? 90 : myPosition <= 29 ? 180 : 270
+    setBoardRotation(prev => {
+      const normalized = ((prev % 360) + 360) % 360
+      let diff = rawTarget - normalized
+      if (diff > 180) diff -= 360
+      if (diff < -180) diff += 360
+      return prev + diff
+    })
+  }, [myPosition])
+
   useEffect(() => {
     if (!gameState?.lastCard) return
     const key = `${gameState.lastCard.image}-${gameState.lastCard.text}`
@@ -120,7 +134,7 @@ export default function GameView() {
           className="absolute inset-0"
           style={{
             transform: `rotate(${boardRotation}deg)`,
-            transition: 'transform 0.4s cubic-bezier(0.4,0,0.2,1)',
+            transition: 'transform 0.7s cubic-bezier(0.65,0,0.35,1)',
           }}
         >
           <Board
@@ -256,21 +270,6 @@ export default function GameView() {
           </div>
         </div>
 
-        {/* Bouton rotation */}
-        <button
-          onClick={() => setBoardRotation(r => (r + 90) % 360)}
-          title="Tourner le plateau"
-          className="absolute z-50 bottom-2 right-2"
-          style={{
-            background: 'rgba(255,255,255,0.07)',
-            border: '1px solid rgba(255,255,255,0.12)',
-            borderRadius: 8, padding: '5px 9px',
-            color: 'rgba(255,255,255,0.5)', cursor: 'pointer',
-            fontSize: 14, lineHeight: 1, backdropFilter: 'blur(8px)',
-          }}
-        >
-          ↻
-        </button>
 
         {/* Drawer Journal */}
         {showLog && (
