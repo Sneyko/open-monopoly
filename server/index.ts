@@ -1,5 +1,6 @@
 import express from 'express'
 import http from 'http'
+import path from 'path'
 import { Server } from 'socket.io'
 import { nanoid } from 'nanoid'
 import type { ServerToClientEvents, ClientToServerEvents, PlayerColor, TradeOffer } from '../shared/types'
@@ -17,8 +18,18 @@ const io = new Server<ClientToServerEvents, ServerToClientEvents>(server, {
 })
 
 const PORT = process.env.PORT ?? 3001
+const isProduction = process.env.NODE_ENV === 'production'
+const clientDistPath = path.resolve(__dirname, '../../../dist')
 
 app.get('/health', (_req, res) => res.json({ ok: true }))
+
+if (isProduction) {
+  app.use(express.static(clientDistPath))
+
+  app.get(/^\/(?!api(?:\/|$)|socket\.io(?:\/|$)).*/, (_req, res) => {
+    res.sendFile(path.join(clientDistPath, 'index.html'))
+  })
+}
 
 io.on('connection', (socket) => {
   let currentPlayerId: string | null = null
@@ -249,5 +260,5 @@ io.on('connection', (socket) => {
 })
 
 server.listen(PORT, () => {
-  console.log(`Serveur Monopoly démarré sur le port ${PORT}`)
+  console.log('Serveur Monopoly démarré sur le port ' + PORT)
 })
