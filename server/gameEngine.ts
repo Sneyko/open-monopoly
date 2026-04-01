@@ -572,8 +572,9 @@ function applyCellEffect(state: GameState, playerId: string, position: number, d
       break
 
     case 'jail':
-      // Simple visite — rien à faire
+      // Simple visite — pas en TD, fin de tour normale
       s = log(s, `${player.name} est en simple visite au TD.`, playerId)
+      s = nextPlayer(s)
       break
 
     case 'free-parking': {
