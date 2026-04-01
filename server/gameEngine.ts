@@ -216,10 +216,6 @@ function transferMoney(
   if (toId !== 'bank') {
     players = players.map(p => p.id === toId ? { ...p, money: p.money + amount } : p)
   }
-  if (toId === 'free-parking') {
-    return { ...state, players, freeParkingPot: state.freeParkingPot + amount }
-  }
-
   return { ...state, players }
 }
 
@@ -251,7 +247,7 @@ function goToJail(state: GameState, playerId: string): GameState {
     doublesCount: 0,
   }
   const player = s.players.find(p => p.id === playerId)!
-  s = log(s, `${player.name} est envoyé en prison !`, playerId)
+  s = log(s, `${player.name} est envoyé en TD !`, playerId)
   return s
 }
 
@@ -274,7 +270,7 @@ function drawCard(state: GameState, deck: 'chance' | 'community'): { state: Game
   const deckCards = deck === 'chance' ? [...state.deck.chance] : [...state.deck.community]
   const card = deckCards.shift()!
 
-  // Remettre la carte en bas sauf si c'est une carte sortie de prison
+  // Remettre la carte en bas sauf si c'est une carte sortie du TD
   if (card.action.type !== 'get_out_of_jail') {
     deckCards.push(card)
   }
@@ -317,7 +313,7 @@ function applyCardAction(
       return movePlayer(state, playerId, nearest, passed)
     }
     case 'pay': {
-      return transferMoney(state, playerId, 'free-parking', action.amount)
+      return transferMoney(state, playerId, 'bank', action.amount)
     }
     case 'receive': {
       return transferMoney(state, 'bank', playerId, action.amount)
@@ -330,7 +326,7 @@ function applyCardAction(
           else total += prop.houses * action.houseAmount
         }
       }
-      return transferMoney(state, playerId, 'free-parking', total)
+      return transferMoney(state, playerId, 'bank', total)
     }
     case 'receive_per_player': {
       let s = state
@@ -492,7 +488,7 @@ export function rollDice(
 
   s = log(s, `${player.name} lance les dés : ${die1} + ${die2} = ${total}${isDouble ? ' (double !)' : ''}.`, playerId)
 
-  // Gestion de la prison
+  // Gestion du TD
   if (player.inJail) {
     if (isDouble) {
       s = {
@@ -500,21 +496,21 @@ export function rollDice(
         players: s.players.map(p =>
           p.id === playerId ? { ...p, inJail: false, jailTurns: 0 } : p
         ),
-        doublesCount: 0, // sort de prison avec double mais ne rejoue pas
+        doublesCount: 0, // sort du TD avec double mais ne rejoue pas
       }
-      s = log(s, `${player.name} sort de prison avec un double !`, playerId)
+      s = log(s, `${player.name} sort du TD avec un double !`, playerId)
     } else {
       const newJailTurns = player.jailTurns + 1
       if (newJailTurns >= 3) {
-        // 3e tour en prison — doit payer l'amende et sortir
-        s = transferMoney(s, playerId, 'free-parking', JAIL_FINE)
+        // 3e tour en TD — doit payer l'amende et sortir
+        s = transferMoney(s, playerId, 'bank', JAIL_FINE)
         s = {
           ...s,
           players: s.players.map(p =>
             p.id === playerId ? { ...p, inJail: false, jailTurns: 0 } : p
           ),
         }
-        s = log(s, `${player.name} paye ${JAIL_FINE} € d'amende et sort de prison.`, playerId)
+        s = log(s, `${player.name} paye ${JAIL_FINE} € d'amende et sort du TD.`, playerId)
       } else {
         s = {
           ...s,
@@ -522,13 +518,13 @@ export function rollDice(
             p.id === playerId ? { ...p, jailTurns: newJailTurns } : p
           ),
         }
-        s = log(s, `${player.name} reste en prison (tour ${newJailTurns}/3).`, playerId)
+        s = log(s, `${player.name} reste en TD (tour ${newJailTurns}/3).`, playerId)
         s = nextPlayer(s)
         return { success: true, state: s }
       }
     }
   } else {
-    // Gestion des doubles hors prison
+    // Gestion des doubles hors TD
     if (isDouble) {
       const newDoubles = s.doublesCount + 1
       if (newDoubles >= 3) {
@@ -563,7 +559,7 @@ function applyCellEffect(state: GameState, playerId: string, position: number, d
 
     case 'tax': {
       const amount = cell.tax ?? 0
-      s = transferMoney(s, playerId, 'free-parking', amount)
+      s = transferMoney(s, playerId, 'bank', amount)
       s = log(s, `${player.name} paye ${amount} € d'impôts.`, playerId)
       s = nextPlayer(s)
       break
@@ -577,7 +573,7 @@ function applyCellEffect(state: GameState, playerId: string, position: number, d
 
     case 'jail':
       // Simple visite — rien à faire
-      s = log(s, `${player.name} est en visite à la prison.`, playerId)
+      s = log(s, `${player.name} est en simple visite au TD.`, playerId)
       break
 
     case 'free-parking': {
@@ -1043,7 +1039,7 @@ export function acceptTrade(
     pendingTrade: undefined,
   }
 
-  // Transférer les cartes sortie de prison
+  // Transférer les cartes sortie du TD
   if (trade.offer.getOutOfJailCards > 0) {
     s = {
       ...s,
@@ -1083,18 +1079,18 @@ export function payJailFine(
   playerId: string,
 ): { success: boolean; error?: string; state: GameState } {
   const player = state.players.find(p => p.id === playerId)!
-  if (!player.inJail) return { success: false, error: 'Vous n\'êtes pas en prison.', state }
+  if (!player.inJail) return { success: false, error: 'Vous n\'êtes pas en TD.', state }
   if (state.currentPlayerId !== playerId) return { success: false, error: 'Ce n\'est pas votre tour.', state }
   if (player.money < JAIL_FINE) return { success: false, error: 'Fonds insuffisants.', state }
 
-  let s = transferMoney(state, playerId, 'free-parking', JAIL_FINE)
+  let s = transferMoney(state, playerId, 'bank', JAIL_FINE)
   s = {
     ...s,
     players: s.players.map(p =>
       p.id === playerId ? { ...p, inJail: false, jailTurns: 0 } : p
     ),
   }
-  s = log(s, `${player.name} paye ${JAIL_FINE} € et sort de prison.`, playerId)
+  s = log(s, `${player.name} paye ${JAIL_FINE} € et sort du TD.`, playerId)
 
   return { success: true, state: s }
 }
@@ -1104,9 +1100,9 @@ export function useGetOutOfJailCard(
   playerId: string,
 ): { success: boolean; error?: string; state: GameState } {
   const player = state.players.find(p => p.id === playerId)!
-  if (!player.inJail) return { success: false, error: 'Vous n\'êtes pas en prison.', state }
+  if (!player.inJail) return { success: false, error: 'Vous n\'êtes pas en TD.', state }
   if (state.currentPlayerId !== playerId) return { success: false, error: 'Ce n\'est pas votre tour.', state }
-  if (player.getOutOfJailCards <= 0) return { success: false, error: 'Vous n\'avez pas de carte sortie de prison.', state }
+  if (player.getOutOfJailCards <= 0) return { success: false, error: 'Vous n\'avez pas de carte sortie du TD.', state }
 
   let s: GameState = {
     ...state,
@@ -1117,8 +1113,8 @@ export function useGetOutOfJailCard(
     ),
   }
   // Remettre la carte dans le tas
-  s = { ...s, deck: { ...s.deck, chance: [...s.deck.chance, { id: 'ch8', text: 'Vous êtes libéré de prison.', image: 'c1.svg', action: { type: 'get_out_of_jail' } as CardAction }] } }
-  s = log(s, `${player.name} utilise sa carte "Libéré de prison".`, playerId)
+  s = { ...s, deck: { ...s.deck, chance: [...s.deck.chance, { id: 'ch8', text: 'Vous êtes libéré du TD.', image: 'c1.svg', action: { type: 'get_out_of_jail' } as CardAction }] } }
+  s = log(s, `${player.name} utilise sa carte "Libéré du TD".`, playerId)
 
   return { success: true, state: s }
 }

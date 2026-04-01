@@ -119,7 +119,7 @@ const CELLS: CellData[] = [
   { index: 17, name: "Community Chest", type: "community",   colorGroup: null },
   { index: 18, name: "Tennessee Ave",   type: "property",    colorGroup: "orange",     price: 180 },
   { index: 19, name: "New York Ave",    type: "property",    colorGroup: "orange",     price: 200 },
-  { index: 20, name: "Free Parking",    type: "free-parking",colorGroup: null },
+  { index: 20, name: "Jardin Japonais", type: "free-parking",colorGroup: null },
   { index: 21, name: "Kentucky Ave",    type: "property",    colorGroup: "red",        price: 220 },
   { index: 22, name: "Chance",          type: "chance",      colorGroup: null },
   { index: 23, name: "Indiana Ave",     type: "property",    colorGroup: "red",        price: 220 },

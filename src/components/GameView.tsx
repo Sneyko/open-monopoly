@@ -172,7 +172,7 @@ export default function GameView() {
             {/* Prison */}
             {isMyTurn && meInJail && (
               <div className="w-full space-y-1.5">
-                <div className="text-[10px] text-orange-300 text-center font-medium">🔒 En prison</div>
+                <div className="text-[10px] text-orange-300 text-center font-medium">🔒 En TD</div>
                 <button onClick={payJailFine}
                   className="w-full bg-orange-500/20 hover:bg-orange-500/30 border border-orange-500/40 text-orange-300 py-1.5 rounded-lg text-xs font-semibold transition-all">
                   Payer 200 € et sortir
@@ -226,16 +226,6 @@ export default function GameView() {
                     Faillite
                   </button>
                 </div>
-              </div>
-            )}
-
-            {/* Parc Gratuit */}
-            {gameState.freeParkingPot > 0 && (
-              <div className="w-full flex items-center justify-between px-1">
-                <span className="text-[10px] text-white/40">🅿️ Parc Gratuit</span>
-                <span className="text-xs font-bold text-yellow-400">
-                  {gameState.freeParkingPot.toLocaleString()} €
-                </span>
               </div>
             )}
 

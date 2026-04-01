@@ -81,7 +81,7 @@ export default function PlayerCard({ player, properties, isCurrentTurn, isMe, co
             {houses > 0 && <span className="text-[9px] text-green-400">🏠{houses}</span>}
             {hotels > 0 && <span className="text-[9px] text-red-400">🏨{hotels}</span>}
             {player.inJail && (
-              <span className="text-[9px] text-orange-300">🔒 {player.jailTurns}/3</span>
+              <span className="text-[9px] text-orange-300">🔒 TD {player.jailTurns}/3</span>
             )}
             {player.getOutOfJailCards > 0 && (
               <span className="text-[9px] text-blue-300">🃏×{player.getOutOfJailCards}</span>
@@ -134,7 +134,7 @@ export default function PlayerCard({ player, properties, isCurrentTurn, isMe, co
           <div className="flex gap-2 mt-1.5 text-[10px]">
             {player.inJail &&
               <span className="bg-orange-500/20 text-orange-300 px-1.5 py-0.5 rounded">
-                🔒 Prison {player.jailTurns}/3
+                🔒 TD {player.jailTurns}/3
               </span>}
             {player.getOutOfJailCards > 0 &&
               <span className="bg-blue-500/20 text-blue-300 px-1.5 py-0.5 rounded">
