@@ -292,10 +292,10 @@ function getCurrentRent(
 }
 
 function getPriceLabelPosition(rect: ReturnType<typeof getCellRect>) {
-  if (rect.isBottom) return { x: rect.cx, y: rect.y + rect.h - 22, angle: 0 }
-  if (rect.isTop) return { x: rect.cx, y: rect.y + 22, angle: 180 }
-  if (rect.isLeft) return { x: rect.x + 22, y: rect.cy, angle: -90 }
-  if (rect.isRight) return { x: rect.x + rect.w - 22, y: rect.cy, angle: 90 }
+  if (rect.isBottom) return { x: rect.cx, y: rect.y + rect.h - 26, angle: 0 }
+  if (rect.isTop) return { x: rect.cx, y: rect.y + 26, angle: 180 }
+  if (rect.isLeft) return { x: rect.x + 26, y: rect.cy, angle: 90 }
+  if (rect.isRight) return { x: rect.x + rect.w - 26, y: rect.cy, angle: -90 }
   return { x: rect.cx, y: rect.cy, angle: 0 }
 }
 
@@ -544,8 +544,8 @@ const Board: React.FC<BoardProps> = ({ players, properties, onCellClick, selecte
           }
 
           const amountPos = getPriceLabelPosition(rect)
-          const labelWidth = Math.max(74, 16 + (amountLabel?.length ?? 0) * 9)
-          const labelHeight = 24
+          const labelWidth = Math.max(92, 20 + (amountLabel?.length ?? 0) * 12)
+          const labelHeight = 30
 
           return (
             <g key={cell.index}>
@@ -610,19 +610,22 @@ const Board: React.FC<BoardProps> = ({ players, properties, onCellClick, selecte
                     y={amountPos.y - labelHeight / 2}
                     width={labelWidth}
                     height={labelHeight}
-                    rx={7}
-                    fill="rgba(0,0,0,0.78)"
+                    rx={9}
+                    fill="rgba(0,0,0,0.9)"
                     stroke={amountBorderColor}
-                    strokeWidth={1.2}
+                    strokeWidth={1.8}
                     className={isBoostedLabel ? "price-boost-rect" : undefined}
                   />
                   <text
                     x={amountPos.x}
-                    y={amountPos.y + 4}
+                    y={amountPos.y + 6}
                     textAnchor="middle"
-                    fontSize="12"
+                    fontSize="16"
                     fontWeight="800"
                     fill={amountLabelColor}
+                    stroke="rgba(0,0,0,0.95)"
+                    strokeWidth="1.1"
+                    paintOrder="stroke"
                     className={isBoostedLabel ? "price-boost-text" : undefined}
                     style={{ userSelect: "none" }}
                   >
