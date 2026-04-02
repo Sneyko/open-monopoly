@@ -64,8 +64,8 @@ export default function PlayerDetailPanel({ player, properties, style, onClose }
             </div>
           </div>
           <div className="flex items-center gap-1.5 text-[10px] text-white/40 mr-1">
-            {houses > 0 && <span className="text-green-400">🏠{houses}</span>}
-            {hotels > 0 && <span className="text-red-400">🏨{hotels}</span>}
+            {houses > 0 && <span className="text-green-400">M {houses}</span>}
+            {hotels > 0 && <span className="text-red-400">H {hotels}</span>}
           </div>
           <button
             onClick={onClose}
@@ -144,13 +144,13 @@ export default function PlayerDetailPanel({ player, properties, style, onClose }
                             {p.mortgaged ? (
                               <span className="text-orange-400">Hypothéquée</span>
                             ) : p.hotel ? (
-                              <span className="text-red-400">🏨 Hôtel</span>
+                              <span className="text-red-400">Hôtel</span>
                             ) : p.houses > 0 ? (
-                              <span className="text-green-400">{'🏠'.repeat(p.houses)}</span>
+                              <span className="text-green-400">{p.houses} maison(s)</span>
                             ) : isRailroad ? (
-                              <span className="text-white/30">🚉 Club</span>
+                              <span className="text-white/30">Club</span>
                             ) : (
-                              <span className="text-white/25">—</span>
+                              <span className="text-white/25">Aucune</span>
                             )}
                           </div>
                         </div>

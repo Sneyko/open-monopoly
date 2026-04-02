@@ -88,10 +88,10 @@ export default function FreeParkingModal({ gameState, me, onChoose, onDecline }:
     <div style={{
       position: 'fixed', inset: 0, zIndex: 100,
       display: 'flex', alignItems: 'center', justifyContent: 'center',
-      background: 'rgba(0,0,0,0.72)', backdropFilter: 'blur(4px)',
+      background: 'rgba(0,0,0,0.84)', backdropFilter: 'blur(6px)',
     }}>
       <div style={{
-        background: '#13151c',
+        background: '#0f131b',
         border: '2px solid rgba(74,222,128,0.35)',
         borderRadius: '24px',
         padding: '28px 28px 24px',
@@ -114,14 +114,13 @@ export default function FreeParkingModal({ gameState, me, onChoose, onDecline }:
         {/* Header */}
         <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', marginBottom:20 }}>
           <div>
-            <div style={{ fontSize:'1.6rem', marginBottom:4 }}>🌸</div>
             <h2 style={{ color:'#fff', fontWeight:800, fontSize:'1.15rem', margin:0 }}>
               Jardin Japonais
             </h2>
             <p style={{ color:'rgba(255,255,255,0.45)', fontSize:'0.8rem', margin:'4px 0 0' }}>
               {alreadyOwnsBoost
                 ? 'Changer votre propriété boostée (200 €) ou conserver (0 €)'
-                : 'Payez 200 € pour booster le loyer d\'une propriété ×3'
+                : 'Payez 200 € pour booster le loyer d\'une propriété x3'
               }
             </p>
           </div>
@@ -153,7 +152,7 @@ export default function FreeParkingModal({ gameState, me, onChoose, onDecline }:
             const isSel = selected === prop.id
             const isCur = prop.id === currentBoostId
             const isPulse = pulse === prop.id
-            const rentBonus = prop.id === currentBoostId ? '×3 actif' : null
+            const rentBonus = prop.id === currentBoostId ? 'x3 actif' : null
 
             return (
               <button
@@ -177,8 +176,8 @@ export default function FreeParkingModal({ gameState, me, onChoose, onDecline }:
                 <div style={{ flex:1, minWidth:0 }}>
                   <div style={{ color:'#fff', fontWeight:600, fontSize:'0.88rem' }}>{name}</div>
                   <div style={{ color:'rgba(255,255,255,0.4)', fontSize:'0.75rem', marginTop:2 }}>
-                    {prop.hotel ? '🏨 Hôtel' : prop.houses > 0 ? `🏠 ${prop.houses} maison(s)` : 'Terrain nu'}
-                    {isCur && <span style={{ color:'#facc15', marginLeft:8, fontWeight:700 }}>⚡ Boost actif</span>}
+                    {prop.hotel ? 'Hôtel' : prop.houses > 0 ? `${prop.houses} maison(s)` : 'Terrain nu'}
+                    {isCur && <span style={{ color:'#facc15', marginLeft:8, fontWeight:700 }}>Boost actif</span>}
                   </div>
                 </div>
                 {rentBonus && (
@@ -186,7 +185,7 @@ export default function FreeParkingModal({ gameState, me, onChoose, onDecline }:
                     background:'rgba(250,204,21,0.15)', border:'1px solid #facc1566',
                     borderRadius:8, padding:'3px 8px',
                     color:'#facc15', fontSize:'0.72rem', fontWeight:700, flexShrink:0,
-                  }}>×3</div>
+                  }}>x3</div>
                 )}
                 {isSel && (
                   <div style={{
@@ -234,7 +233,7 @@ export default function FreeParkingModal({ gameState, me, onChoose, onDecline }:
               transition:'all 0.2s',
             }}
           >
-            ⚡ Booster (200 €)
+            Booster (200 €)
           </button>
         </div>
       </div>

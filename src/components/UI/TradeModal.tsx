@@ -11,6 +11,14 @@ interface TradeModalProps {
   onClose: () => void
 }
 
+function CloseIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+      <path d="M2 2L12 12M12 2L2 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  )
+}
+
 export default function TradeModal({
   gameState, myPlayerId, onPropose, onAccept, onRefuse, onClose,
 }: TradeModalProps) {
@@ -47,8 +55,8 @@ export default function TradeModal({
   if (isTarget && pendingTrade) {
     const from = gameState.players.find(p => p.id === pendingTrade.fromPlayerId)
     return (
-      <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
-        <div className="bg-gray-800 rounded-xl p-6 w-96 max-w-full">
+      <div className="fixed inset-0 bg-black/85 backdrop-blur-sm flex items-center justify-center z-50">
+        <div className="bg-gray-900 border border-white/10 rounded-xl p-6 w-96 max-w-full shadow-2xl">
           <h2 className="text-xl font-bold mb-4">Offre d'échange de {from?.name}</h2>
           <div className="text-sm space-y-2 mb-4">
             <div>Il offre : {pendingTrade.offer.money} € +{pendingTrade.offer.propertyIds.length} propriété(s)</div>
@@ -70,11 +78,13 @@ export default function TradeModal({
   }
 
   return (
-    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
-      <div className="bg-gray-800 rounded-xl p-6 w-[480px] max-w-full max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-black/85 backdrop-blur-sm flex items-center justify-center z-50">
+      <div className="bg-gray-900 border border-white/10 rounded-xl p-6 w-[480px] max-w-full max-h-[90vh] overflow-y-auto shadow-2xl">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-bold">Proposer un échange</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-white text-xl">✕</button>
+          <button onClick={onClose} className="text-gray-400 hover:text-white" aria-label="Fermer">
+            <CloseIcon />
+          </button>
         </div>
 
         <div className="mb-4">

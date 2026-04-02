@@ -50,7 +50,7 @@ export default function JoinRoom() {
           onKeyDown={e => e.key === 'Enter' && handleJoin()}
           maxLength={20}
           className="w-full bg-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-          placeholder="Entrez votre nom…"
+          placeholder="Entrez votre nom..."
         />
       </div>
 

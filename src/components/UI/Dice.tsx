@@ -195,7 +195,7 @@ export default function Dice({ values, onRoll, isMyTurn, hasRolled, diceSize = 7
           onClick={triggerRoll}
           className="my-turn-glow mt-1 w-full bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-400 hover:to-green-500 text-white font-bold py-3 px-6 rounded-xl text-base transition-all active:scale-95 shadow-lg"
         >
-          🎲 Lancer les dés
+          Lancer les dés
         </button>
       )}
     </div>

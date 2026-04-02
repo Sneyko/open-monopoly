@@ -90,7 +90,7 @@ export default function CardRevealModal({ deck, text, image, onClose }: Props) {
       {/* Backdrop */}
       <div
         className="card-modal-backdrop fixed inset-0 z-50 flex items-center justify-center"
-        style={{ ...overlayStyle, background: 'rgba(0,0,0,0.72)', backdropFilter: 'blur(4px)' }}
+        style={{ ...overlayStyle, background: 'rgba(0,0,0,0.86)', backdropFilter: 'blur(6px)' }}
         onClick={() => { setPhase('out'); setTimeout(onClose, 400) }}
       >
         <div

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react'
-import Board from './Board/Board'
+import Board, { CELLS } from './Board/Board'
 import Dice from './UI/Dice'
 import PlayerCard from './UI/PlayerCard'
 import PlayerDetailPanel from './UI/PlayerDetailPanel'
@@ -77,6 +77,29 @@ const ASSET_VALUES: Record<number, AssetMeta> = {
   35: { price: 200, mortgage: 100 },
   37: { price: 350, mortgage: 175, houseCost: 200 },
   39: { price: 400, mortgage: 200, houseCost: 200 },
+}
+
+function ChevronIcon({ expanded }: { expanded: boolean }) {
+  return (
+    <svg
+      width="12"
+      height="12"
+      viewBox="0 0 12 12"
+      className={`transition-transform ${expanded ? 'rotate-180' : ''}`}
+      fill="none"
+      aria-hidden="true"
+    >
+      <path d="M2 4.5L6 8L10 4.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+function CloseIcon() {
+  return (
+    <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true">
+      <path d="M1 1L9 9M9 1L1 9" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+    </svg>
+  )
 }
 
 export default function GameView() {
@@ -167,6 +190,11 @@ export default function GameView() {
   const meInJail = me?.inJail ?? false
   const hasRolled = !canRollNow
   const canEndTurn = isMyTurn && !me?.isBankrupt && !!gameState.lastDice && !gameState.awaitingParkingChoice && !gameState.awaitingPropertyDecision && !lastWasDouble
+  const buyCell = cellAtMyPosition ? CELLS.find(cell => cell.index === cellAtMyPosition.id) : null
+  const buyPrice = cellAtMyPosition ? ASSET_VALUES[cellAtMyPosition.id]?.price : null
+  const buyLabel = buyCell && buyPrice
+    ? `Acheter ${buyCell.name} pour ${buyPrice.toLocaleString()} €`
+    : 'Acheter la propriété'
 
   const ranking = useMemo(() => {
     const byOwner = new Map<string, typeof gameState.properties>()
@@ -208,7 +236,7 @@ export default function GameView() {
     return (
       <div className="h-screen flex items-center justify-center bg-[#0f1117]">
         <div className="text-center fade-in-up">
-          <div className="text-8xl mb-6">🏆</div>
+          <div className="text-xs tracking-[0.25em] uppercase text-yellow-300/70 mb-3">Victoire</div>
           <h1 className="text-5xl font-black text-yellow-300 mb-3">
             {winner?.name ?? 'Personne'} remporte la partie !
           </h1>
@@ -234,7 +262,7 @@ export default function GameView() {
             className="w-full px-3 py-2 flex items-center justify-between text-left hover:bg-white/5 transition-colors"
           >
             <span className="text-[11px] font-semibold text-white/85 uppercase tracking-wider">Classement patrimoine</span>
-            <span className="text-xs text-white/60">{showRanking ? '▲' : '▼'}</span>
+            <span className="text-white/60"><ChevronIcon expanded={showRanking} /></span>
           </button>
 
           {showRanking && (
@@ -310,12 +338,12 @@ export default function GameView() {
                     style={{ backgroundColor: COLOR_HEX[currentPlayer.color] ?? '#888' }} />
                 )}
                 <span className="text-xs font-bold text-white/90 leading-none">
-                  {isMyTurn ? '⭐ Votre tour !' : `${currentPlayer?.name ?? '…'} joue`}
+                  {isMyTurn ? 'Votre tour' : `${currentPlayer?.name ?? '...'} joue`}
                 </span>
               </div>
               {gameState.doublesCount > 0 && (
                 <div className="text-[10px] text-yellow-400 font-semibold mt-0.5">
-                  🎯 Double × {gameState.doublesCount}
+                  Double x {gameState.doublesCount}
                 </div>
               )}
               <div className="text-[9px] text-white/30 mt-0.5">Tour {gameState.turn}</div>
@@ -333,7 +361,7 @@ export default function GameView() {
             {/* Prison */}
             {isMyTurn && meInJail && (
               <div className="w-full space-y-1.5">
-                <div className="text-[10px] text-orange-300 text-center font-medium">🔒 En TD</div>
+                <div className="text-[10px] text-orange-300 text-center font-medium">En TD</div>
                 <button onClick={payJailFine}
                   className="w-full bg-orange-500/20 hover:bg-orange-500/30 border border-orange-500/40 text-orange-300 py-1.5 rounded-lg text-xs font-semibold transition-all">
                   Payer 200 € et sortir
@@ -341,7 +369,7 @@ export default function GameView() {
                 {(me?.getOutOfJailCards ?? 0) > 0 && (
                   <button onClick={useGetOutOfJailCard}
                     className="w-full bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/40 text-blue-300 py-1.5 rounded-lg text-xs font-semibold transition-all">
-                    🃏 Utiliser la carte
+                    Utiliser la carte
                   </button>
                 )}
               </div>
@@ -352,7 +380,7 @@ export default function GameView() {
               <div className="w-full space-y-1.5">
                 <button onClick={buyProperty}
                   className="w-full bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-400 hover:to-amber-400 text-black font-bold py-2 rounded-xl text-sm transition-all active:scale-95 shadow-md">
-                  💰 Acheter
+                  {buyLabel}
                 </button>
                 <button onClick={declineProperty}
                   className="w-full bg-white/6 hover:bg-white/10 border border-white/10 text-white/60 py-1.5 rounded-xl text-xs transition-all">
@@ -365,7 +393,7 @@ export default function GameView() {
             {gameState.pendingTrade?.toPlayerId === myPlayerId && !showTrade && (
               <button onClick={() => setShowTrade(true)}
                 className="w-full bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/50 rounded-xl p-2 text-left transition-all">
-                <div className="text-[10px] font-bold text-purple-300 mb-0.5">🤝 Offre reçue !</div>
+                <div className="text-[10px] font-bold text-purple-300 mb-0.5">Offre reçue</div>
                 <div className="text-[9px] text-white/50">Voir l'échange proposé</div>
               </button>
             )}
@@ -375,12 +403,12 @@ export default function GameView() {
               <div className="w-full space-y-1">
                 <button onClick={endTurn}
                   className="w-full bg-white/8 hover:bg-white/14 border border-white/12 text-white/80 py-2 rounded-xl text-xs font-semibold transition-all">
-                  Fin du tour →
+                  Fin du tour
                 </button>
                 <div className="flex gap-1.5">
                   <button onClick={() => setShowTrade(true)}
                     className="flex-1 bg-purple-500/15 hover:bg-purple-500/25 border border-purple-500/30 text-purple-300 py-1.5 rounded-lg text-[10px] font-medium transition-all">
-                    🤝 Échanger
+                    Échanger
                   </button>
                   <button onClick={declareBankruptcy}
                     className="flex-1 text-red-900/60 hover:text-red-400 border border-red-900/20 hover:border-red-400/30 py-1.5 rounded-lg text-[10px] transition-colors">
@@ -393,13 +421,14 @@ export default function GameView() {
             {/* Bouton Journal */}
             <button
               onClick={() => setShowLog(v => !v)}
-              className={`w-full py-1.5 rounded-lg text-[10px] font-medium transition-all border ${
+              className={`w-full py-1.5 rounded-lg text-[10px] font-medium transition-all border flex items-center justify-center gap-1 ${
                 showLog
                   ? 'bg-blue-500/20 border-blue-400/30 text-blue-300'
                   : 'bg-white/5 border-white/8 text-white/40 hover:text-white/60'
               }`}
             >
-              📋 Journal {showLog ? '▲' : '▼'}
+              <span>Journal</span>
+              <ChevronIcon expanded={showLog} />
             </button>
           </div>
         </div>
@@ -441,7 +470,7 @@ export default function GameView() {
                 title="Exclure ce joueur déconnecté"
                 className="absolute top-1 right-1 w-4 h-4 flex items-center justify-center rounded-full bg-red-500/20 hover:bg-red-500/40 text-red-400 hover:text-red-200 transition-colors text-[9px] font-bold"
               >
-                ✕
+                <CloseIcon />
               </button>
             )}
           </div>

@@ -11,7 +11,7 @@ const SKIP_PATTERNS = [
 interface BannerItem {
   id: string
   message: string
-  icon: string
+  tag: string
   color: string
   bg: string
 }
@@ -20,27 +20,27 @@ function parseEvent(event: GameEvent): BannerItem | null {
   const m = event.message
   if (SKIP_PATTERNS.some(p => m.includes(p))) return null
 
-  let icon = '📋'
+  let tag = 'INFO'
   let color = '#94a3b8'
   let bg = 'rgba(148,163,184,0.12)'
 
-  if (m.includes('achète'))                               { icon = '🏠'; color = '#34d399'; bg = 'rgba(52,211,153,0.12)' }
-  else if (m.includes('construit un hôtel'))              { icon = '🏨'; color = '#f87171'; bg = 'rgba(248,113,113,0.12)' }
-  else if (m.includes('construit une maison'))            { icon = '🏡'; color = '#4ade80'; bg = 'rgba(74,222,128,0.12)' }
-  else if (m.includes('paye') && m.includes('loyer'))     { icon = '💸'; color = '#fb923c'; bg = 'rgba(251,146,60,0.12)' }
-  else if (m.includes('passe par la case Départ'))        { icon = '💰'; color = '#facc15'; bg = 'rgba(250,204,21,0.12)' }
-  else if (m.includes('prison') || m.includes('TD'))      { icon = '🔒'; color = '#f97316'; bg = 'rgba(249,115,22,0.12)' }
-  else if (m.includes('tire une carte'))                  { icon = '🃏'; color = '#a78bfa'; bg = 'rgba(167,139,250,0.12)' }
-  else if (m.includes('faillite'))                        { icon = '💀'; color = '#f87171'; bg = 'rgba(248,113,113,0.15)' }
-  else if (m.includes('ramasse') && m.includes('Parc'))   { icon = '🅿️'; color = '#60a5fa'; bg = 'rgba(96,165,250,0.12)' }
-  else if (m.includes('hypothèque'))                      { icon = '📜'; color = '#fbbf24'; bg = 'rgba(251,191,36,0.12)' }
-  else if (m.includes('enchère') || m.includes('remporte'))  { icon = '🏷️'; color = '#38bdf8'; bg = 'rgba(56,189,248,0.12)' }
-  else if (m.includes('vend'))                            { icon = '🔨'; color = '#94a3b8'; bg = 'rgba(148,163,184,0.12)' }
-  else if (m.includes('paye') && m.includes('impôt'))     { icon = '🏛️'; color = '#fb923c'; bg = 'rgba(251,146,60,0.12)' }
-  else if (m.includes('lève l\'hypothèque'))              { icon = '🔓'; color = '#4ade80'; bg = 'rgba(74,222,128,0.12)' }
+  if (m.includes('achète'))                               { tag = 'ACHAT'; color = '#34d399'; bg = 'rgba(52,211,153,0.12)' }
+  else if (m.includes('construit un hôtel'))              { tag = 'HOTEL'; color = '#f87171'; bg = 'rgba(248,113,113,0.12)' }
+  else if (m.includes('construit une maison'))            { tag = 'MAISON'; color = '#4ade80'; bg = 'rgba(74,222,128,0.12)' }
+  else if (m.includes('paye') && m.includes('loyer'))     { tag = 'LOYER'; color = '#fb923c'; bg = 'rgba(251,146,60,0.12)' }
+  else if (m.includes('passe par la case Départ'))        { tag = 'DEPART'; color = '#facc15'; bg = 'rgba(250,204,21,0.12)' }
+  else if (m.includes('prison') || m.includes('TD'))      { tag = 'TD'; color = '#f97316'; bg = 'rgba(249,115,22,0.12)' }
+  else if (m.includes('tire une carte'))                  { tag = 'CARTE'; color = '#a78bfa'; bg = 'rgba(167,139,250,0.12)' }
+  else if (m.includes('faillite'))                        { tag = 'KO'; color = '#f87171'; bg = 'rgba(248,113,113,0.15)' }
+  else if (m.includes('ramasse') && m.includes('Parc'))   { tag = 'PARC'; color = '#60a5fa'; bg = 'rgba(96,165,250,0.12)' }
+  else if (m.includes('hypothèque'))                      { tag = 'HYPOTHEQUE'; color = '#fbbf24'; bg = 'rgba(251,191,36,0.12)' }
+  else if (m.includes('enchère') || m.includes('remporte'))  { tag = 'ENCHERE'; color = '#38bdf8'; bg = 'rgba(56,189,248,0.12)' }
+  else if (m.includes('vend'))                            { tag = 'VENTE'; color = '#94a3b8'; bg = 'rgba(148,163,184,0.12)' }
+  else if (m.includes('paye') && m.includes('impôt'))     { tag = 'IMPOT'; color = '#fb923c'; bg = 'rgba(251,146,60,0.12)' }
+  else if (m.includes('lève l\'hypothèque'))              { tag = 'LIBERATION'; color = '#4ade80'; bg = 'rgba(74,222,128,0.12)' }
   else return null
 
-  return { id: event.id, message: m, icon, color, bg }
+  return { id: event.id, message: m, tag, color, bg }
 }
 
 interface Props {
@@ -121,8 +121,24 @@ export default function EventBanner({ events }: Props) {
           padding: '16px 24px',
           boxShadow: `0 16px 56px rgba(0,0,0,0.85), 0 0 0 1px ${current.color}33, inset 0 0 32px ${current.color}11`,
         }}>
-          <div style={{ fontSize: '2.5rem', lineHeight: 1, marginBottom: '8px' }}>
-            {current.icon}
+          <div
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '0.72rem',
+              letterSpacing: '0.14em',
+              textTransform: 'uppercase',
+              fontWeight: 800,
+              color: current.color,
+              border: `1px solid ${current.color}55`,
+              background: current.bg,
+              borderRadius: '999px',
+              padding: '4px 10px',
+              marginBottom: '10px',
+            }}
+          >
+            {current.tag}
           </div>
           <p style={{
             color: current.color,

@@ -56,7 +56,7 @@ const CELL_INFO: CellInfo[] = [
   { index: 17, name: 'Caisse IZLY',           type: 'community',   description: 'Piochez une carte IZLY.' },
   { index: 18, name: 'Jolimont',              type: 'property',    colorGroup: 'orange',     colorHex: GROUP_HEX.orange,      price: 180, rents: [14,70,200,550,750,950],  mortgage: 90,  houseCost: 100 },
   { index: 19, name: 'Marengo-SNCF',          type: 'property',    colorGroup: 'orange',     colorHex: GROUP_HEX.orange,      price: 200, rents: [16,80,220,600,800,1000], mortgage: 100, houseCost: 100 },
-  { index: 20, name: 'Jardin Japonais',       type: 'free-parking',description: 'Choisissez une de vos propriétés pour tripler son loyer (×3) jusqu\'à votre prochain passage.' },
+  { index: 20, name: 'Jardin Japonais',       type: 'free-parking',description: 'Choisissez une de vos propriétés pour tripler son loyer (x3) jusqu\'à votre prochain passage.' },
   { index: 21, name: 'Patte d\'Oie',          type: 'property',    colorGroup: 'red',        colorHex: GROUP_HEX.red,         price: 220, rents: [18,90,250,700,875,1050], mortgage: 110, houseCost: 150 },
   { index: 22, name: 'Chance',                type: 'chance',      description: 'Piochez une carte Chance.' },
   { index: 23, name: 'St-Cyprien',            type: 'property',    colorGroup: 'red',        colorHex: GROUP_HEX.red,         price: 220, rents: [18,90,250,700,875,1050], mortgage: 110, houseCost: 150 },
@@ -203,10 +203,10 @@ export default function CellInfoPanel({ cellIndex, property, players, onClose }:
             <span className="text-white/40 text-xs">Constructions</span>
             <span className="text-xs font-semibold">
               {hotel
-                ? <span className="text-red-400">🏨 Hôtel</span>
+                ? <span className="text-red-400">Hôtel</span>
                 : houses > 0
-                  ? <span className="text-green-400">{'🏠'.repeat(houses)}</span>
-                  : <span className="text-white/30">—</span>
+                  ? <span className="text-green-400">{houses} maison(s)</span>
+                  : <span className="text-white/30">Aucune</span>
               }
             </span>
           </div>

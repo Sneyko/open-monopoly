@@ -13,6 +13,22 @@ interface WaitingRoomProps {
   myPlayerId: string | null
 }
 
+function CloseIcon() {
+  return (
+    <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true">
+      <path d="M1 1L9 9M9 1L1 9" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+function ArrowRightIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+      <path d="M2 6H10M7 3L10 6L7 9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
 export default function WaitingRoom({ room, myPlayerId }: WaitingRoomProps) {
   const socket = useSocket()
   const isHost = room.hostId === myPlayerId
@@ -58,7 +74,7 @@ export default function WaitingRoom({ room, myPlayerId }: WaitingRoomProps) {
                     title="Exclure ce joueur"
                     className="w-5 h-5 flex items-center justify-center rounded-full bg-red-500/15 hover:bg-red-500/35 text-red-400 hover:text-red-300 transition-colors text-xs font-bold"
                   >
-                    ✕
+                    <CloseIcon />
                   </button>
                 )}
               </div>
@@ -69,7 +85,7 @@ export default function WaitingRoom({ room, myPlayerId }: WaitingRoomProps) {
           {Array.from({ length: Math.max(0, 2 - room.players.length) }).map((_, i) => (
             <div key={i} className="flex items-center gap-3 opacity-30">
               <div className="w-4 h-4 rounded-full border-2 border-dashed border-white/30" />
-              <span className="text-sm text-white/30 italic">En attente…</span>
+              <span className="text-sm text-white/30 italic">En attente...</span>
             </div>
           ))}
         </div>
@@ -79,13 +95,20 @@ export default function WaitingRoom({ room, myPlayerId }: WaitingRoomProps) {
         <button
           onClick={() => socket.emit('start_game')}
           disabled={!canStart}
-          className="w-full bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-400 hover:to-green-500 disabled:opacity-30 py-4 rounded-2xl font-bold text-lg transition-all active:scale-98 shadow-lg shadow-emerald-600/20"
+          className="w-full bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-400 hover:to-green-500 disabled:opacity-30 py-4 rounded-2xl font-bold text-lg transition-all active:scale-98 shadow-lg shadow-emerald-600/20 flex items-center justify-center gap-2"
         >
-          {canStart ? 'Lancer la partie →' : `Attendez encore ${2 - room.players.length} joueur(s)`}
+          {canStart ? (
+            <>
+              <span>Lancer la partie</span>
+              <ArrowRightIcon />
+            </>
+          ) : (
+            `Attendez encore ${2 - room.players.length} joueur(s)`
+          )}
         </button>
       ) : (
         <div className="text-center text-white/30 text-sm py-4">
-          En attente que l'hôte lance la partie…
+          En attente que l'hôte lance la partie...
         </div>
       )}
     </div>

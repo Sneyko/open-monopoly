@@ -442,7 +442,7 @@ const Board: React.FC<BoardProps> = ({ players, properties, onCellClick, selecte
                 </g>
               )}
 
-              {/* Boost Jardin Japonais ⚡ — halo animé sur toute la case */}
+              {/* Boost Jardin Japonais - halo animé sur toute la case */}
               {isBoosted && (() => {
                 const margin = 5;
                 const bcx = rect.cx;
@@ -460,9 +460,9 @@ const Board: React.FC<BoardProps> = ({ players, properties, onCellClick, selecte
                       strokeDasharray="18 8"
                       className="boost-ring-anim"
                     />
-                    {/* Badge ⚡ centré */}
+                    {/* Badge boost centré */}
                     <circle cx={bcx} cy={bcy} r={16} fill="rgba(0,0,0,0.7)" className="boost-dot"/>
-                    <text x={bcx} y={bcy + 6} textAnchor="middle" fontSize="16" style={{ userSelect:'none' }}>⚡</text>
+                    <text x={bcx} y={bcy + 4} textAnchor="middle" fontSize="10" fontWeight="700" fill="white" style={{ userSelect:'none' }}>x3</text>
                   </g>
                 );
               })()}

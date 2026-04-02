@@ -10,6 +10,14 @@ import logoSrc from './assets/logo.svg'
 
 type Screen = 'home' | 'create' | 'join' | 'waiting' | 'playing'
 
+function ArrowLeftIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+      <path d="M10 6H2M5 3L2 6L5 9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
 export default function App() {
   const socket = useSocket()
   const { room, myPlayerId, myName, myColor, setRoom, setMyPlayerId } = useRoomStore()
@@ -83,14 +91,14 @@ export default function App() {
         {/* Logo */}
         <div className="text-center mb-10">
           <img src={logoSrc} alt="Logo Puceaupoly" className="w-36 h-36 mx-auto mb-4 select-none" />
-          <p className="text-white/30 text-sm">Open-source · Multijoueur · En ligne</p>
+          <p className="text-white/30 text-sm">Open-source, multijoueur, en ligne</p>
           <div className={`mt-3 text-xs inline-flex items-center gap-1.5 px-3 py-1 rounded-full border
             ${connected
               ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400'
               : 'border-red-500/30 bg-red-500/10 text-red-400'
             }`}>
             <span className={`w-1.5 h-1.5 rounded-full ${connected ? 'bg-emerald-400' : 'bg-red-400'}`} />
-            {connected ? 'Serveur connecté' : 'Connexion en cours…'}
+            {connected ? 'Serveur connecté' : 'Connexion en cours...'}
           </div>
         </div>
 
@@ -123,7 +131,8 @@ export default function App() {
           <div className="bg-white/5 border border-white/10 rounded-2xl p-6 fade-in-up">
             <button onClick={() => setScreen('home')}
               className="flex items-center gap-1.5 text-white/40 hover:text-white/70 text-sm mb-5 transition-colors">
-              ← Retour
+              <ArrowLeftIcon />
+              <span>Retour</span>
             </button>
             {screen === 'create' ? <CreateRoom /> : <JoinRoom />}
           </div>

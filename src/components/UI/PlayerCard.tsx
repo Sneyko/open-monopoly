@@ -15,6 +15,14 @@ interface PlayerCardProps {
   corner?: boolean
 }
 
+function TurnIndicatorIcon() {
+  return (
+    <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true">
+      <path d="M3 2.2L7 5L3 7.8V2.2Z" fill="currentColor" />
+    </svg>
+  )
+}
+
 export default function PlayerCard({ player, properties, isCurrentTurn, isMe, corner }: PlayerCardProps) {
   const owned = properties.filter(p => p.ownerId === player.id)
   const houses = owned.reduce((s, p) => s + p.houses, 0)
@@ -43,7 +51,7 @@ export default function PlayerCard({ player, properties, isCurrentTurn, isMe, co
               {player.name}
             </span>
             {isMe && <span className="text-[9px] text-white/40 font-medium ml-0.5">tu</span>}
-            {isCurrentTurn && <span className="ml-auto text-yellow-400 text-[10px]">▶</span>}
+            {isCurrentTurn && <span className="ml-auto text-yellow-400 text-[10px]"><TurnIndicatorIcon /></span>}
             {!player.isConnected && !player.isBankrupt &&
               <span className="ml-auto text-[9px] text-red-400">déco.</span>}
             {player.isBankrupt &&
@@ -78,13 +86,13 @@ export default function PlayerCard({ player, properties, isCurrentTurn, isMe, co
             {owned.length > 0 && (
               <span className="text-[9px] text-white/40">{owned.length} prop.</span>
             )}
-            {houses > 0 && <span className="text-[9px] text-green-400">🏠{houses}</span>}
-            {hotels > 0 && <span className="text-[9px] text-red-400">🏨{hotels}</span>}
+            {houses > 0 && <span className="text-[9px] text-green-400">Maisons {houses}</span>}
+            {hotels > 0 && <span className="text-[9px] text-red-400">Hotels {hotels}</span>}
             {player.inJail && (
-              <span className="text-[9px] text-orange-300">🔒 TD {player.jailTurns}/3</span>
+              <span className="text-[9px] text-orange-300">TD {player.jailTurns}/3</span>
             )}
             {player.getOutOfJailCards > 0 && (
-              <span className="text-[9px] text-blue-300">🃏×{player.getOutOfJailCards}</span>
+              <span className="text-[9px] text-blue-300">Carte x{player.getOutOfJailCards}</span>
             )}
           </div>
         </div>
@@ -112,7 +120,7 @@ export default function PlayerCard({ player, properties, isCurrentTurn, isMe, co
             {player.name}
           </span>
           {isMe && <span className="text-[10px] text-white/40 font-medium">vous</span>}
-          {isCurrentTurn && <span className="ml-auto text-yellow-400 text-xs">▶</span>}
+          {isCurrentTurn && <span className="ml-auto text-yellow-400 text-xs"><TurnIndicatorIcon /></span>}
           {!player.isConnected && !player.isBankrupt &&
             <span className="ml-auto text-xs text-red-400">déco.</span>}
           {player.isBankrupt &&
@@ -125,8 +133,8 @@ export default function PlayerCard({ player, properties, isCurrentTurn, isMe, co
           </span>
           <div className="flex items-center gap-2 text-xs text-white/50">
             {owned.length > 0 && <span>{owned.length} prop.</span>}
-            {houses > 0 && <span className="text-green-400">🏠{houses}</span>}
-            {hotels > 0 && <span className="text-red-400">🏨{hotels}</span>}
+            {houses > 0 && <span className="text-green-400">M {houses}</span>}
+            {hotels > 0 && <span className="text-red-400">H {hotels}</span>}
           </div>
         </div>
 
@@ -134,11 +142,11 @@ export default function PlayerCard({ player, properties, isCurrentTurn, isMe, co
           <div className="flex gap-2 mt-1.5 text-[10px]">
             {player.inJail &&
               <span className="bg-orange-500/20 text-orange-300 px-1.5 py-0.5 rounded">
-                🔒 TD {player.jailTurns}/3
+                TD {player.jailTurns}/3
               </span>}
             {player.getOutOfJailCards > 0 &&
               <span className="bg-blue-500/20 text-blue-300 px-1.5 py-0.5 rounded">
-                🃏 ×{player.getOutOfJailCards}
+                Carte x{player.getOutOfJailCards}
               </span>}
           </div>
         )}
