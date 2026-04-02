@@ -493,14 +493,14 @@ const Board: React.FC<BoardProps> = ({ players, properties, onCellClick, selecte
               0%, 100% { opacity: 0.9; stroke: #facc15; filter: drop-shadow(0 0 1px rgba(250,204,21,0.75)); }
               50% { opacity: 1; stroke: #fde047; filter: drop-shadow(0 0 8px rgba(250,204,21,0.95)); }
             }
-            @keyframes price-boost-text-glow {
-              0%, 100% { fill: #facc15; filter: drop-shadow(0 0 1px rgba(250,204,21,0.8)); }
-              50% { fill: #fde047; filter: drop-shadow(0 0 7px rgba(250,204,21,1)); }
+            @keyframes price-owner-rect-glow {
+              0%, 100% { stroke: var(--owner-color); opacity: 0.86; filter: drop-shadow(0 0 1px color-mix(in srgb, var(--owner-color) 70%, transparent)); }
+              50% { stroke: color-mix(in srgb, var(--owner-color) 82%, white 18%); opacity: 1; filter: drop-shadow(0 0 7px color-mix(in srgb, var(--owner-color) 88%, transparent)); }
             }
             .boost-dot { animation: boost-pulse 1.4s ease-in-out infinite; }
             .boost-ring-anim { animation: boost-ring 2s linear infinite; }
             .price-boost-rect { animation: price-boost-rect-glow 1.25s ease-in-out infinite; }
-            .price-boost-text { animation: price-boost-text-glow 1.1s ease-in-out infinite; }
+            .price-owned-rect { animation: price-owner-rect-glow 1.35s ease-in-out infinite; }
           `}</style>
           <filter id="drop-shadow" x="-50%" y="-50%" width="200%" height="200%">
             <feDropShadow dx="0" dy="2.5" stdDeviation="3" floodOpacity="0.45" />
@@ -527,19 +527,22 @@ const Board: React.FC<BoardProps> = ({ players, properties, onCellClick, selecte
           let amountLabel: string | null = null
           let amountLabelColor = "#ffffff"
           let amountBorderColor = "rgba(255,255,255,0.35)"
+          let amountRectClass: string | undefined
 
           if (isBuyable) {
             if (property?.ownerId) {
               const rent = getCurrentRent(cell, property, properties, boostedPropertyId)
               if (rent != null) {
-                amountLabel = `${rent} €`
-                amountLabelColor = isBoostedLabel ? "#facc15" : ownerColorHex
+                amountLabel = `${rent} €${isBoostedLabel ? ' x3' : ''}`
+                amountLabelColor = "#ffffff"
                 amountBorderColor = isBoostedLabel ? "#facc15" : ownerColorHex
+                amountRectClass = isBoostedLabel ? "price-boost-rect" : "price-owned-rect"
               }
             } else if (cell.price) {
               amountLabel = `${cell.price} €`
               amountLabelColor = "#ffffff"
               amountBorderColor = "rgba(255,255,255,0.35)"
+              amountRectClass = undefined
             }
           }
 
@@ -614,7 +617,8 @@ const Board: React.FC<BoardProps> = ({ players, properties, onCellClick, selecte
                     fill="rgba(0,0,0,0.9)"
                     stroke={amountBorderColor}
                     strokeWidth={1.8}
-                    className={isBoostedLabel ? "price-boost-rect" : undefined}
+                    className={amountRectClass}
+                    style={property?.ownerId && !isBoostedLabel ? ({ ['--owner-color' as any]: ownerColorHex } as React.CSSProperties) : undefined}
                   />
                   <text
                     x={amountPos.x}
@@ -626,7 +630,6 @@ const Board: React.FC<BoardProps> = ({ players, properties, onCellClick, selecte
                     stroke="rgba(0,0,0,0.95)"
                     strokeWidth="1.1"
                     paintOrder="stroke"
-                    className={isBoostedLabel ? "price-boost-text" : undefined}
                     style={{ userSelect: "none" }}
                   >
                     {amountLabel}
