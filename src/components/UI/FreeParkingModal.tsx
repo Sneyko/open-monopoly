@@ -8,7 +8,7 @@ const CELL_NAMES: Record<number, string> = {
   26:"Jeanne d'Arc", 27:'Compans-Caffarelli', 29:'Palais de Justice',
   31:'François-Verdier', 32:'Esquirol', 34:'Carmes', 37:'Capitole', 39:'Jean-Jaurès',
   5:'Nine', 15:'Café Pop', 25:"O'club", 35:'Magma Club',
-  12:'Tisséo Pastel', 28:'Facture Libre',
+  12:'Tisséo Pastel', 28:'Facture Fibre',
 }
 
 const GROUP_HEX: Record<string, string> = {
