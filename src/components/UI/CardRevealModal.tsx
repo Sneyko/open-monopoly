@@ -28,6 +28,15 @@ const CARD_IMAGES: Record<string, string> = {
   'i4.svg': i4, 'i5.svg': i5, 'i6.svg': i6, 'i7.svg': i7,
 }
 
+if (typeof window !== 'undefined') {
+  const preloadedBacks = [rectoChance, rectoIzly]
+  for (const src of preloadedBacks) {
+    const img = new window.Image()
+    img.decoding = 'async'
+    img.src = src
+  }
+}
+
 interface Props {
   deck: 'chance' | 'community'
   text: string
@@ -111,6 +120,7 @@ export default function CardRevealModal({ deck, text, image, onClose }: Props) {
               <img
                 src={phase === 'face' ? faceSrc : rectoSrc}
                 alt={phase === 'face' ? text : label}
+                loading="eager"
                 style={{
                   width: 'min(72vw, 340px)',
                   height: 'auto',

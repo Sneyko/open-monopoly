@@ -117,6 +117,7 @@ export default function GameView() {
   const [selectedCell, setSelectedCell] = useState<number | null>(null)
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null)
   const [boardRotation, setBoardRotation] = useState(0)
+  const [pendingCard, setPendingCard] = useState<{ deck: 'chance'|'community'; text: string; image: string } | undefined>(undefined)
   const [shownCard, setShownCard] = useState<{ deck: 'chance'|'community'; text: string; image: string } | undefined>(undefined)
   const [showKarimTdAnim, setShowKarimTdAnim] = useState(false)
   const [billAnimLabel, setBillAnimLabel] = useState<string | null>(null)
@@ -145,9 +146,34 @@ export default function GameView() {
     const key = `${gameState.lastCard.image}-${gameState.lastCard.text}`
     if (key !== prevCardRef.current) {
       prevCardRef.current = key
-      setShownCard(gameState.lastCard)
+      setPendingCard(gameState.lastCard)
     }
   }, [gameState?.lastCard])
+
+  const animatedCurrentPos = gameState?.currentPlayerId
+    ? animatedPlayers.find(p => p.id === gameState.currentPlayerId)?.position
+    : undefined
+  const realCurrentPos = gameState?.currentPlayerId
+    ? gameState.players.find(p => p.id === gameState.currentPlayerId)?.position
+    : undefined
+
+  useEffect(() => {
+    if (!pendingCard || shownCard) return
+
+    const pawnArrived =
+      realCurrentPos == null ||
+      animatedCurrentPos == null ||
+      realCurrentPos === animatedCurrentPos
+
+    if (!pawnArrived) return
+
+    const timer = window.setTimeout(() => {
+      setShownCard(pendingCard)
+      setPendingCard(undefined)
+    }, 80)
+
+    return () => window.clearTimeout(timer)
+  }, [pendingCard, shownCard, realCurrentPos, animatedCurrentPos])
 
   useEffect(() => {
     if (!gameState?.log?.length) return
