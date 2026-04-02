@@ -66,6 +66,22 @@ export default function Dice({ values, onRoll, isMyTurn, hasRolled, diceSize = 7
   const prevValuesRef = useRef<string>('')
   const pendingResultRef = useRef<[number, number] | null>(null)
   const rollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const onRollRef = useRef(onRoll)
+  const latestValuesRef = useRef<[number, number] | null>(values)
+  const rollingRef = useRef(false)
+
+  // ── Timer auto-lancer ─────────────────────────────────────────────────────
+  const [timeLeft, setTimeLeft] = useState(TURN_TIMEOUT)
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const shouldRun = isMyTurn && !hasRolled
+
+  useEffect(() => {
+    onRollRef.current = onRoll
+  }, [onRoll])
+
+  useEffect(() => {
+    latestValuesRef.current = values
+  }, [values])
 
   useEffect(() => {
     if (!values) return
@@ -82,29 +98,32 @@ export default function Dice({ values, onRoll, isMyTurn, hasRolled, diceSize = 7
   useEffect(() => {
     return () => {
       if (rollTimeoutRef.current) clearTimeout(rollTimeoutRef.current)
+      if (timerRef.current) clearInterval(timerRef.current)
     }
   }, [])
 
   const triggerRoll = useCallback(() => {
-    if (rolling) return
+    if (rollingRef.current) return
 
+    rollingRef.current = true
     setRolling(true)
+    setTimeLeft(0)
+    if (timerRef.current) {
+      clearInterval(timerRef.current)
+      timerRef.current = null
+    }
     pendingResultRef.current = null
-    onRoll?.()
+    onRollRef.current?.()
 
     if (rollTimeoutRef.current) clearTimeout(rollTimeoutRef.current)
     rollTimeoutRef.current = setTimeout(() => {
-      const finalValues = pendingResultRef.current ?? values
+      const finalValues = pendingResultRef.current ?? latestValuesRef.current
       if (finalValues) setDisplay(finalValues)
       setRolling(false)
+      rollingRef.current = false
       rollTimeoutRef.current = null
     }, 800)
-  }, [onRoll, rolling, values])
-
-  // ── Timer auto-lancer ─────────────────────────────────────────────────────
-  const [timeLeft, setTimeLeft]   = useState(TURN_TIMEOUT)
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
-  const shouldRun = isMyTurn && !hasRolled
+  }, [])
 
   useEffect(() => {
     if (!shouldRun) {
@@ -193,7 +212,8 @@ export default function Dice({ values, onRoll, isMyTurn, hasRolled, diceSize = 7
       {shouldRun && (
         <button
           onClick={triggerRoll}
-          className="my-turn-glow mt-1 w-full bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-400 hover:to-green-500 text-white font-bold py-3 px-6 rounded-xl text-base transition-all active:scale-95 shadow-lg"
+          disabled={rolling}
+          className="my-turn-glow mt-1 w-full bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-400 hover:to-green-500 disabled:opacity-70 disabled:cursor-not-allowed text-white font-bold py-3 px-6 rounded-xl text-base transition-all active:scale-95 shadow-lg"
         >
           Lancer les dés
         </button>

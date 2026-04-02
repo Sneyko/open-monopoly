@@ -679,10 +679,17 @@ function applyCellEffect(state: GameState, playerId: string, position: number, d
         break
       }
 
+      const boostedRentActive =
+        s.freeParkingBoost?.propertyId === position &&
+        s.freeParkingBoost?.playerId === prop.ownerId
       const rent = calculateRent(s, playerId, position, diceTotal)
       s = transferMoney(s, playerId, prop.ownerId, rent)
       const owner = s.players.find(p => p.id === prop.ownerId)!
-      s = log(s, `${player.name} paye ${rent} € de loyer à ${owner.name} pour ${cell.name}.`, playerId)
+      s = log(
+        s,
+        `${player.name} paye ${rent} € de loyer à ${owner.name} pour ${cell.name}${boostedRentActive ? ' (boost x3 actif)' : ''}.`,
+        playerId,
+      )
       s = checkBankruptcy(s, playerId)
       if (!s.players.find(p => p.id === playerId)?.isBankrupt) s = finishTurnAfterAction(s, keepTurnOnDouble)
       break
