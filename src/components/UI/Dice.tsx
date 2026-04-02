@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState, useId, useCallback } from 'react'
 
-const TURN_TIMEOUT = 30 // secondes avant auto-lancer
+const TURN_TIMEOUT = 60 // secondes avant auto-lancer
 
 interface DiceProps {
   values: [number, number] | null

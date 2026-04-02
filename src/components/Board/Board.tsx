@@ -86,6 +86,33 @@ interface CellData {
   price?: number;
 }
 
+const PROPERTY_RENTS: Record<number, number[]> = {
+  1: [2, 10, 30, 90, 160, 250],
+  3: [4, 20, 60, 180, 320, 450],
+  6: [6, 30, 90, 270, 400, 550],
+  8: [6, 30, 90, 270, 400, 550],
+  9: [8, 40, 100, 300, 450, 600],
+  11: [10, 50, 150, 450, 625, 750],
+  13: [10, 50, 150, 450, 625, 750],
+  14: [12, 60, 180, 500, 700, 900],
+  16: [14, 70, 200, 550, 750, 950],
+  18: [14, 70, 200, 550, 750, 950],
+  19: [16, 80, 220, 600, 800, 1000],
+  21: [18, 90, 250, 700, 875, 1050],
+  23: [18, 90, 250, 700, 875, 1050],
+  24: [20, 100, 300, 750, 925, 1100],
+  26: [22, 110, 330, 800, 975, 1150],
+  27: [22, 110, 330, 800, 975, 1150],
+  29: [24, 120, 360, 850, 1025, 1200],
+  31: [26, 130, 390, 900, 1100, 1275],
+  32: [26, 130, 390, 900, 1100, 1275],
+  34: [28, 150, 450, 1000, 1200, 1400],
+  37: [35, 175, 500, 1100, 1300, 1500],
+  39: [50, 200, 600, 1400, 1700, 2000],
+};
+
+const RAILROAD_RENTS = [25, 50, 100, 200];
+
 const GROUP_COLORS: Record<NonNullable<ColorGroup>, string> = {
   brown: "#8B5E3C",
   "light-blue": "#81D4FA",
@@ -202,6 +229,65 @@ function getCellRect(index: number): {
   }
 
   return { x: 0, y: 0, w: W, h: H, cx: W / 2, cy: H / 2, isBottom: false, isTop: false, isLeft: false, isRight: false };
+}
+
+function countOwnedRailroads(properties: Property[], ownerId: string): number {
+  const railroadIds = CELLS.filter((cell) => cell.type === "railroad").map((cell) => cell.index)
+  return railroadIds.filter((id) => properties.find((p) => p.id === id)?.ownerId === ownerId).length
+}
+
+function ownsFullGroup(properties: Property[], ownerId: string, colorGroup: Exclude<ColorGroup, null>): boolean {
+  const groupIds = CELLS
+    .filter((cell) => cell.type === "property" && cell.colorGroup === colorGroup)
+    .map((cell) => cell.index)
+
+  return groupIds.every((id) => properties.find((p) => p.id === id)?.ownerId === ownerId)
+}
+
+function getCurrentRent(
+  cell: CellData,
+  property: Property,
+  properties: Property[],
+  boostedPropertyId?: number | null,
+): number | null {
+  if (!property.ownerId) return null
+  if (property.mortgaged) return 0
+
+  if (cell.type === "railroad") {
+    const owned = countOwnedRailroads(properties, property.ownerId)
+    return RAILROAD_RENTS[Math.max(0, owned - 1)] ?? RAILROAD_RENTS[0]
+  }
+
+  if (cell.type === "property") {
+    const rents = PROPERTY_RENTS[cell.index]
+    if (!rents) return null
+
+    let amount = rents[0]
+
+    if (property.hotel) {
+      amount = rents[5]
+    } else if (property.houses > 0) {
+      amount = rents[property.houses] ?? rents[0]
+    } else if (cell.colorGroup && ownsFullGroup(properties, property.ownerId, cell.colorGroup)) {
+      amount = rents[0] * 2
+    }
+
+    if (boostedPropertyId != null && boostedPropertyId === cell.index) {
+      amount = amount * 3
+    }
+
+    return amount
+  }
+
+  return null
+}
+
+function getPriceLabelPosition(rect: ReturnType<typeof getCellRect>) {
+  if (rect.isBottom) return { x: rect.cx, y: rect.y + rect.h - 16 }
+  if (rect.isTop) return { x: rect.cx, y: rect.y + 16 }
+  if (rect.isLeft) return { x: rect.x + 18, y: rect.cy }
+  if (rect.isRight) return { x: rect.x + rect.w - 18, y: rect.cy }
+  return { x: rect.cx, y: rect.cy }
 }
 
 // ─── Maisons / hôtel ─────────────────────────────────────────────────────────
@@ -414,6 +500,25 @@ const Board: React.FC<BoardProps> = ({ players, properties, onCellClick, selecte
             : 'fill-player-red';
           const isBoosted = boostedPropertyId != null && cell.index === boostedPropertyId;
           const isSelected = selectedCell === cell.index;
+          const isBuyable = cell.type === "property" || cell.type === "railroad" || cell.type === "utility";
+
+          let amountLabel: string | null = null
+          let amountLabelColor = "#fde68a"
+
+          if (isBuyable) {
+            if (property?.ownerId) {
+              const rent = getCurrentRent(cell, property, properties, boostedPropertyId)
+              if (rent != null) {
+                amountLabel = `${rent} €`
+                amountLabelColor = "#93c5fd"
+              }
+            } else if (cell.price) {
+              amountLabel = `${cell.price} €`
+              amountLabelColor = "#fde68a"
+            }
+          }
+
+          const amountPos = getPriceLabelPosition(rect)
 
           return (
             <g key={cell.index}>
@@ -466,6 +571,33 @@ const Board: React.FC<BoardProps> = ({ players, properties, onCellClick, selecte
                   </g>
                 );
               })()}
+
+              {/* Prix dynamique : prix d'achat si libre, loyer actuel si possédée */}
+              {amountLabel && !isCorner && (
+                <g pointerEvents="none">
+                  <rect
+                    x={amountPos.x - 22}
+                    y={amountPos.y - 8}
+                    width={44}
+                    height={16}
+                    rx={5}
+                    fill="rgba(0,0,0,0.58)"
+                    stroke="rgba(255,255,255,0.2)"
+                    strokeWidth={0.8}
+                  />
+                  <text
+                    x={amountPos.x}
+                    y={amountPos.y + 3}
+                    textAnchor="middle"
+                    fontSize="8"
+                    fontWeight="700"
+                    fill={amountLabelColor}
+                    style={{ userSelect: "none" }}
+                  >
+                    {amountLabel}
+                  </text>
+                </g>
+              )}
 
               {/* Indicateur propriétaire (sans maison) : bande colorée opaque + pastille */}
               {isOwned && (() => {

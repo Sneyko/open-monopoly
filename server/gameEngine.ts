@@ -362,6 +362,15 @@ function applyCardAction(
   }
 }
 
+function isMovementCardAction(action: CardAction): boolean {
+  return (
+    action.type === 'move_to' ||
+    action.type === 'go_back' ||
+    action.type === 'move_to_nearest' ||
+    action.type === 'move_relative'
+  )
+}
+
 function checkBankruptcy(state: GameState, playerId: string): GameState {
   const player = state.players.find(p => p.id === playerId)
   if (!player || player.money >= 0) return state
@@ -630,9 +639,16 @@ function applyCellEffect(state: GameState, playerId: string, position: number, d
       const { state: s2, card } = drawCard(s, 'chance')
       s = { ...s2, lastCard: { deck: 'chance', text: card.text, image: card.image } }
       s = log(s, `${player.name} tire une carte Chance : "${card.text}"`, playerId)
+      const beforeCardPos = s.players.find(p => p.id === playerId)?.position ?? position
       s = applyCardAction(s, playerId, card.action, diceTotal)
-      if (card.action.type === 'go_to_jail') s = nextPlayer(s)
-      else s = finishTurnAfterAction(s, keepTurnOnDouble)
+      if (card.action.type === 'go_to_jail') {
+        s = nextPlayer(s)
+      } else if (isMovementCardAction(card.action)) {
+        const afterCardPos = s.players.find(p => p.id === playerId)?.position ?? beforeCardPos
+        s = applyCellEffect(s, playerId, afterCardPos, diceTotal, keepTurnOnDouble)
+      } else {
+        s = finishTurnAfterAction(s, keepTurnOnDouble)
+      }
       break
     }
 
@@ -640,9 +656,16 @@ function applyCellEffect(state: GameState, playerId: string, position: number, d
       const { state: s2, card } = drawCard(s, 'community')
       s = { ...s2, lastCard: { deck: 'community', text: card.text, image: card.image } }
       s = log(s, `${player.name} tire une carte IZLY : "${card.text}"`, playerId)
+      const beforeCardPos = s.players.find(p => p.id === playerId)?.position ?? position
       s = applyCardAction(s, playerId, card.action, diceTotal)
-      if (card.action.type === 'go_to_jail') s = nextPlayer(s)
-      else s = finishTurnAfterAction(s, keepTurnOnDouble)
+      if (card.action.type === 'go_to_jail') {
+        s = nextPlayer(s)
+      } else if (isMovementCardAction(card.action)) {
+        const afterCardPos = s.players.find(p => p.id === playerId)?.position ?? beforeCardPos
+        s = applyCellEffect(s, playerId, afterCardPos, diceTotal, keepTurnOnDouble)
+      } else {
+        s = finishTurnAfterAction(s, keepTurnOnDouble)
+      }
       break
     }
 
