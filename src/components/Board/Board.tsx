@@ -55,6 +55,15 @@ const PLAYER_COLOR_CLASS: Record<PlayerColor, string> = {
   orange: 'fill-player-orange',
 }
 
+const PLAYER_COLOR_HEX: Record<PlayerColor, string> = {
+  red: '#ef4444',
+  blue: '#3b82f6',
+  green: '#22c55e',
+  yellow: '#eab308',
+  purple: '#a855f7',
+  orange: '#f97316',
+}
+
 type CellType =
   | "property"
   | "railroad"
@@ -283,11 +292,11 @@ function getCurrentRent(
 }
 
 function getPriceLabelPosition(rect: ReturnType<typeof getCellRect>) {
-  if (rect.isBottom) return { x: rect.cx, y: rect.y + rect.h - 16 }
-  if (rect.isTop) return { x: rect.cx, y: rect.y + 16 }
-  if (rect.isLeft) return { x: rect.x + 18, y: rect.cy }
-  if (rect.isRight) return { x: rect.x + rect.w - 18, y: rect.cy }
-  return { x: rect.cx, y: rect.cy }
+  if (rect.isBottom) return { x: rect.cx, y: rect.y + rect.h - 22, angle: 0 }
+  if (rect.isTop) return { x: rect.cx, y: rect.y + 22, angle: 180 }
+  if (rect.isLeft) return { x: rect.x + 22, y: rect.cy, angle: -90 }
+  if (rect.isRight) return { x: rect.x + rect.w - 22, y: rect.cy, angle: 90 }
+  return { x: rect.cx, y: rect.cy, angle: 0 }
 }
 
 // ─── Maisons / hôtel ─────────────────────────────────────────────────────────
@@ -480,8 +489,18 @@ const Board: React.FC<BoardProps> = ({ players, properties, onCellClick, selecte
               0%,100% { stroke-dashoffset: 0; }
               100%    { stroke-dashoffset: -60; }
             }
+            @keyframes price-boost-rect-glow {
+              0%, 100% { opacity: 0.9; stroke: #facc15; filter: drop-shadow(0 0 1px rgba(250,204,21,0.75)); }
+              50% { opacity: 1; stroke: #fde047; filter: drop-shadow(0 0 8px rgba(250,204,21,0.95)); }
+            }
+            @keyframes price-boost-text-glow {
+              0%, 100% { fill: #facc15; filter: drop-shadow(0 0 1px rgba(250,204,21,0.8)); }
+              50% { fill: #fde047; filter: drop-shadow(0 0 7px rgba(250,204,21,1)); }
+            }
             .boost-dot { animation: boost-pulse 1.4s ease-in-out infinite; }
             .boost-ring-anim { animation: boost-ring 2s linear infinite; }
+            .price-boost-rect { animation: price-boost-rect-glow 1.25s ease-in-out infinite; }
+            .price-boost-text { animation: price-boost-text-glow 1.1s ease-in-out infinite; }
           `}</style>
           <filter id="drop-shadow" x="-50%" y="-50%" width="200%" height="200%">
             <feDropShadow dx="0" dy="2.5" stdDeviation="3" floodOpacity="0.45" />
@@ -501,24 +520,32 @@ const Board: React.FC<BoardProps> = ({ players, properties, onCellClick, selecte
           const isBoosted = boostedPropertyId != null && cell.index === boostedPropertyId;
           const isSelected = selectedCell === cell.index;
           const isBuyable = cell.type === "property" || cell.type === "railroad" || cell.type === "utility";
+          const ownerPlayer = property?.ownerId ? players.find(p => p.id === property.ownerId) : undefined
+          const ownerColorHex = ownerPlayer ? PLAYER_COLOR_HEX[ownerPlayer.color] : "#ffffff"
+          const isBoostedLabel = !!property?.ownerId && isBoosted
 
           let amountLabel: string | null = null
-          let amountLabelColor = "#fde68a"
+          let amountLabelColor = "#ffffff"
+          let amountBorderColor = "rgba(255,255,255,0.35)"
 
           if (isBuyable) {
             if (property?.ownerId) {
               const rent = getCurrentRent(cell, property, properties, boostedPropertyId)
               if (rent != null) {
                 amountLabel = `${rent} €`
-                amountLabelColor = "#93c5fd"
+                amountLabelColor = isBoostedLabel ? "#facc15" : ownerColorHex
+                amountBorderColor = isBoostedLabel ? "#facc15" : ownerColorHex
               }
             } else if (cell.price) {
               amountLabel = `${cell.price} €`
-              amountLabelColor = "#fde68a"
+              amountLabelColor = "#ffffff"
+              amountBorderColor = "rgba(255,255,255,0.35)"
             }
           }
 
           const amountPos = getPriceLabelPosition(rect)
+          const labelWidth = Math.max(74, 16 + (amountLabel?.length ?? 0) * 9)
+          const labelHeight = 24
 
           return (
             <g key={cell.index}>
@@ -574,24 +601,29 @@ const Board: React.FC<BoardProps> = ({ players, properties, onCellClick, selecte
 
               {/* Prix dynamique : prix d'achat si libre, loyer actuel si possédée */}
               {amountLabel && !isCorner && (
-                <g pointerEvents="none">
+                <g
+                  pointerEvents="none"
+                  transform={`rotate(${amountPos.angle}, ${amountPos.x}, ${amountPos.y})`}
+                >
                   <rect
-                    x={amountPos.x - 22}
-                    y={amountPos.y - 8}
-                    width={44}
-                    height={16}
-                    rx={5}
-                    fill="rgba(0,0,0,0.58)"
-                    stroke="rgba(255,255,255,0.2)"
-                    strokeWidth={0.8}
+                    x={amountPos.x - labelWidth / 2}
+                    y={amountPos.y - labelHeight / 2}
+                    width={labelWidth}
+                    height={labelHeight}
+                    rx={7}
+                    fill="rgba(0,0,0,0.78)"
+                    stroke={amountBorderColor}
+                    strokeWidth={1.2}
+                    className={isBoostedLabel ? "price-boost-rect" : undefined}
                   />
                   <text
                     x={amountPos.x}
-                    y={amountPos.y + 3}
+                    y={amountPos.y + 4}
                     textAnchor="middle"
-                    fontSize="8"
-                    fontWeight="700"
+                    fontSize="12"
+                    fontWeight="800"
                     fill={amountLabelColor}
+                    className={isBoostedLabel ? "price-boost-text" : undefined}
                     style={{ userSelect: "none" }}
                   >
                     {amountLabel}
